@@ -13,6 +13,7 @@ import (
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
 	"github.com/maxuanquang/idm/internal/handler"
 	"github.com/maxuanquang/idm/internal/handler/grpc"
+	"github.com/maxuanquang/idm/internal/handler/http"
 	"github.com/maxuanquang/idm/internal/logic"
 )
 
@@ -36,6 +37,12 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 	server := grpc.NewServer(idmServiceServer)
 	return server, func() {
 		cleanup()
+	}, nil
+}
+
+func InitializeHTTPServer(configFilePath configs.ConfigFilePath) (http.Server, func(), error) {
+	server := http.NewServer()
+	return server, func() {
 	}, nil
 }
 

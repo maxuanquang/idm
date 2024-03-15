@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -27,7 +28,7 @@ func (s *server) Start(ctx context.Context) error {
 	err := gw.RegisterIdmServiceHandlerFromEndpoint(
 		ctx,
 		mux,
-		"/api",
+		":8080",
 		opts,
 	)
 	if err != nil {
@@ -35,5 +36,6 @@ func (s *server) Start(ctx context.Context) error {
 	}
 
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
+	fmt.Println("http server is running on :8081")
 	return http.ListenAndServe(":8081", mux)
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type Account struct {
-	AccountID   uint64 `gorm:"column:account_id"`
+	AccountID   uint64 `gorm:"column:account_id;primaryKey"`
 	AccountName string `gorm:"column:account_name"`
 }
 

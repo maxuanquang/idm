@@ -10,6 +10,7 @@ import (
 	"github.com/maxuanquang/idm/internal/dataaccess"
 	"github.com/maxuanquang/idm/internal/handler"
 	"github.com/maxuanquang/idm/internal/handler/grpc"
+	"github.com/maxuanquang/idm/internal/handler/http"
 	"github.com/maxuanquang/idm/internal/logic"
 )
 
@@ -21,6 +22,12 @@ var WireSet = wire.NewSet(
 )
 
 func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, func(), error) {
+	wire.Build(WireSet)
+
+	return nil, nil, nil
+}
+
+func InitializeHTTPServer(configFilePath configs.ConfigFilePath) (http.Server, func(), error) {
 	wire.Build(WireSet)
 
 	return nil, nil, nil

@@ -25,7 +25,7 @@ type server struct {
 
 // Start implements Server.
 func (s *server) Start(ctx context.Context) error {
-	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", 8080))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", 8080))
 	if err != nil {
 		return err
 	}
@@ -34,5 +34,7 @@ func (s *server) Start(ctx context.Context) error {
 	var opts = []grpc.ServerOption{}
 	server := grpc.NewServer(opts...)
 	idm.RegisterIdmServiceServer(server, s.handler)
+
+	fmt.Println("gRPC server is running on :8080")
 	return server.Serve(listener)
 }

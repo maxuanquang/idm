@@ -7,7 +7,7 @@ import (
 )
 
 type AccountPassword struct {
-	OfAccountID uint64 `gorm:"column:of_account_id"`
+	OfAccountID uint64 `gorm:"column:of_account_id;primaryKey"`
 	Hashed      string `gorm:"column:hashed"`
 }
 

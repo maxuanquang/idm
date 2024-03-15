@@ -6,6 +6,7 @@ import (
 	"github.com/maxuanquang/idm/internal/configs"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 func InitializeDB(dbConfig configs.Database) (*gorm.DB, func(), error) {
@@ -13,7 +14,11 @@ func InitializeDB(dbConfig configs.Database) (*gorm.DB, func(), error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", dbConfig.Username, dbConfig.Password, dbConfig.Host, dbConfig.Port, dbConfig.Database)
 
 	// Open GORM database connection
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+		},
+	})
 	if err != nil {
 		return nil, nil, err
 	}
