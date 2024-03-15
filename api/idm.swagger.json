@@ -282,10 +282,22 @@
         }
       }
     },
+    "idmAccount": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "accountName": {
+          "type": "string"
+        }
+      }
+    },
     "idmCreateAccountRequest": {
       "type": "object",
       "properties": {
-        "username": {
+        "accountName": {
           "type": "string"
         },
         "password": {
@@ -296,7 +308,7 @@
     "idmCreateAccountResponse": {
       "type": "object",
       "properties": {
-        "userId": {
+        "accountId": {
           "type": "string",
           "format": "uint64"
         }
@@ -327,7 +339,7 @@
     "idmCreateSessionRequest": {
       "type": "object",
       "properties": {
-        "username": {
+        "accountName": {
           "type": "string"
         },
         "password": {
@@ -340,6 +352,9 @@
       "properties": {
         "token": {
           "type": "string"
+        },
+        "account": {
+          "$ref": "#/definitions/idmAccount"
         }
       }
     },
@@ -375,8 +390,8 @@
           "type": "string",
           "format": "uint64"
         },
-        "ofUser": {
-          "$ref": "#/definitions/idmUser"
+        "ofAccount": {
+          "$ref": "#/definitions/idmAccount"
         },
         "downloadType": {
           "$ref": "#/definitions/idmDownloadType"
@@ -427,18 +442,6 @@
       "properties": {
         "downloadTask": {
           "$ref": "#/definitions/idmDownloadTask"
-        }
-      }
-    },
-    "idmUser": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "username": {
-          "type": "string"
         }
       }
     },
