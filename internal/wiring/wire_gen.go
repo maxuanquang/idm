@@ -15,6 +15,7 @@ import (
 	"github.com/maxuanquang/idm/internal/handler/grpc"
 	"github.com/maxuanquang/idm/internal/handler/http"
 	"github.com/maxuanquang/idm/internal/logic"
+	"github.com/maxuanquang/idm/internal/utils"
 )
 
 // Injectors from wire.go:
@@ -25,14 +26,14 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 		return nil, nil, err
 	}
 	configsDatabase := config.Database
-	db, cleanup, err := database.InitializeDB(configsDatabase)
+	databaseDatabase, cleanup, err := database.InitializeDB(configsDatabase)
 	if err != nil {
 		return nil, nil, err
 	}
-	accountDataAccessor := database.NewAccountDataAccessor(db)
-	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(db)
+	accountDataAccessor := database.NewAccountDataAccessor(databaseDatabase)
+	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase)
 	hash := logic.NewHash()
-	account := logic.NewAccount(db, accountDataAccessor, accountPasswordDataAccessor, hash)
+	account := logic.NewAccount(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash)
 	idmServiceServer := grpc.NewHandler(account)
 	server := grpc.NewServer(idmServiceServer)
 	return server, func() {
@@ -48,4 +49,4 @@ func InitializeHTTPServer(configFilePath configs.ConfigFilePath) (http.Server, f
 
 // wire.go:
 
-var WireSet = wire.NewSet(configs.WireSet, dataaccess.WireSet, handler.WireSet, logic.WireSet)
+var WireSet = wire.NewSet(configs.WireSet, dataaccess.WireSet, handler.WireSet, logic.WireSet, utils.WireSet)

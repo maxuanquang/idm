@@ -10,8 +10,9 @@ import (
 type ConfigFilePath string
 
 type Config struct {
-	Account  Account  `yaml:"account"`
+	Auth     Auth     `yaml:"auth"`
 	Database Database `yaml:"database"`
+	Log      Log      `yaml:"log"`
 }
 
 func NewConfig(configFilePath ConfigFilePath) (Config, error) {

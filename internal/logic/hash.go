@@ -13,7 +13,7 @@ type Hash interface {
 }
 
 type hash struct {
-	accountConfig configs.Account
+	authConfig configs.Auth
 }
 
 func NewHash() Hash {
@@ -22,7 +22,7 @@ func NewHash() Hash {
 
 // HashPassword implements Hash.
 func (h *hash) HashPassword(ctx context.Context, plainPassword string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(plainPassword), h.accountConfig.HashCost)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(plainPassword), h.authConfig.Hash.Cost)
 	if err != nil {
 		return "", err
 	}

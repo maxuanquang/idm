@@ -1,9 +1,5 @@
 package database
 
-import (
-	"gorm.io/gorm"
-)
-
 type DownloadTask struct {
 	DownloadTaskID uint64 `gorm:"column:download_task_id;primaryKey"`
 	OfAccountID    uint64 `gorm:"column:of_account_id"`
@@ -15,10 +11,10 @@ type DownloadTask struct {
 
 type DownloadTaskDataAccessor interface{}
 
-func NewDownloadTaskDataAccessor(database *gorm.DB) DownloadTaskDataAccessor {
+func NewDownloadTaskDataAccessor(database Database) DownloadTaskDataAccessor {
 	return &downloadTaskDataAccessor{database: database}
 }
 
 type downloadTaskDataAccessor struct {
-	database *gorm.DB
+	database Database
 }

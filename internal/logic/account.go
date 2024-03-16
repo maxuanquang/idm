@@ -34,13 +34,13 @@ type Account interface {
 }
 
 func NewAccount(
-	gormDatabase *gorm.DB,
+	database database.Database,
 	accountDataAccessor database.AccountDataAccessor,
 	passwordDataAccessor database.AccountPasswordDataAccessor,
 	hashLogic Hash,
 ) Account {
 	return &account{
-		gormDatabase:         gormDatabase,
+		database:             database,
 		accountDataAccessor:  accountDataAccessor,
 		passwordDataAccessor: passwordDataAccessor,
 		hashLogic:            hashLogic,
@@ -48,7 +48,7 @@ func NewAccount(
 }
 
 type account struct {
-	gormDatabase         *gorm.DB
+	database             database.Database
 	accountDataAccessor  database.AccountDataAccessor
 	passwordDataAccessor database.AccountPasswordDataAccessor
 	hashLogic            Hash
@@ -58,7 +58,7 @@ type account struct {
 func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (CreateAccountOutput, error) {
 	var createAccountOutput CreateAccountOutput
 
-	err := a.gormDatabase.Transaction(func(tx *gorm.DB) error {
+	err := a.database.Transaction(func(tx *gorm.DB) error {
 		// check account name taken
 		_, err := a.accountDataAccessor.GetAccountByName(ctx, in.AccountName)
 		if err == nil {

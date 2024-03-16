@@ -2,8 +2,6 @@ package database
 
 import (
 	"context"
-
-	"gorm.io/gorm"
 )
 
 type AccountPassword struct {
@@ -17,10 +15,10 @@ type AccountPasswordDataAccessor interface {
 }
 
 type accountPasswordDataAccessor struct {
-	database *gorm.DB
+	database Database
 }
 
-func NewAccountPasswordDataAccessor(database *gorm.DB) AccountPasswordDataAccessor {
+func NewAccountPasswordDataAccessor(database Database) AccountPasswordDataAccessor {
 	return &accountPasswordDataAccessor{database: database}
 }
 

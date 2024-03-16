@@ -1,3 +1,6 @@
+-- Drop token_public_key table
+DROP TABLE IF EXISTS `token_public_key`;
+
 -- Drop download_task table
 DROP TABLE IF EXISTS `download_task`;
 

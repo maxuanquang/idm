@@ -2,8 +2,6 @@ package database
 
 import (
 	"context"
-
-	"gorm.io/gorm"
 )
 
 type Account struct {
@@ -17,14 +15,14 @@ type AccountDataAccessor interface {
 	GetAccountByName(ctx context.Context, name string) (Account, error)
 }
 
-func NewAccountDataAccessor(database *gorm.DB) AccountDataAccessor {
+func NewAccountDataAccessor(database Database) AccountDataAccessor {
 	return &accountDataAccessor{
 		database: database,
 	}
 }
 
 type accountDataAccessor struct {
-	database *gorm.DB
+	database Database
 }
 
 // CreateAccount implements AccountDataAccessor.

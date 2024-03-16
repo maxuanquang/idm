@@ -12,6 +12,7 @@ import (
 	"github.com/maxuanquang/idm/internal/handler/grpc"
 	"github.com/maxuanquang/idm/internal/handler/http"
 	"github.com/maxuanquang/idm/internal/logic"
+	"github.com/maxuanquang/idm/internal/utils"
 )
 
 var WireSet = wire.NewSet(
@@ -19,6 +20,7 @@ var WireSet = wire.NewSet(
 	dataaccess.WireSet,
 	handler.WireSet,
 	logic.WireSet,
+	utils.WireSet,
 )
 
 func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, func(), error) {
