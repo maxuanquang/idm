@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
 	"gorm.io/gorm"
@@ -20,12 +21,15 @@ type CreateAccountOutput struct {
 }
 
 type CreateSessionInput struct {
-	AccountName uint64
+	AccountName string
 	Password    string
 }
 
 type CreateSessionOutput struct {
-	// TODO: Implement this
+	Token       string
+	ExpiresAt   time.Time
+	AccountID   uint64
+	AccountName string
 }
 
 type Account interface {
@@ -38,12 +42,14 @@ func NewAccount(
 	accountDataAccessor database.AccountDataAccessor,
 	passwordDataAccessor database.AccountPasswordDataAccessor,
 	hashLogic Hash,
+	tokenLogic Token,
 ) Account {
 	return &account{
 		database:             database,
 		accountDataAccessor:  accountDataAccessor,
 		passwordDataAccessor: passwordDataAccessor,
 		hashLogic:            hashLogic,
+		tokenLogic:           tokenLogic,
 	}
 }
 
@@ -52,6 +58,7 @@ type account struct {
 	accountDataAccessor  database.AccountDataAccessor
 	passwordDataAccessor database.AccountPasswordDataAccessor
 	hashLogic            Hash
+	tokenLogic           Token
 }
 
 // CreateAccount implements Account.
@@ -103,5 +110,30 @@ func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (Cre
 
 // CreateSession implements Account.
 func (a *account) CreateSession(ctx context.Context, in CreateSessionInput) (CreateSessionOutput, error) {
-	panic("unimplemented")
+	foundAccount, err := a.accountDataAccessor.GetAccountByName(ctx, in.AccountName)
+	if err != nil {
+		return CreateSessionOutput{}, fmt.Errorf("account name does not exist: %w", err)
+	}
+
+	foundPassword, err := a.passwordDataAccessor.GetPassword(ctx, foundAccount.AccountID)
+	if err != nil {
+		return CreateSessionOutput{}, fmt.Errorf("password does not exist: %w", err)
+	}
+
+	matched, err := a.hashLogic.IsHashEqual(ctx, in.Password, foundPassword.Hashed)
+	if err != nil || !matched {
+		return CreateSessionOutput{}, fmt.Errorf("wrong account name or password: %w", err)
+	}
+
+	stringToken, expiresAt, err := a.tokenLogic.CreateToken(ctx, foundAccount.AccountID)
+	if err != nil {
+		return CreateSessionOutput{}, fmt.Errorf("can not create token: %w", err)
+	}
+
+	return CreateSessionOutput{
+		Token:       stringToken,
+		ExpiresAt:   expiresAt,
+		AccountID:   foundAccount.AccountID,
+		AccountName: foundAccount.AccountName,
+	}, nil
 }

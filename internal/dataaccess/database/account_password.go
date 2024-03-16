@@ -11,7 +11,7 @@ type AccountPassword struct {
 
 type AccountPasswordDataAccessor interface {
 	CreatePassword(ctx context.Context, ofAccountID uint64, hashedPassword string) (AccountPassword, error)
-	ComparePassword(ctx context.Context, ofAccountID uint64, password string) error
+	GetPassword(ctx context.Context, ofAccountID uint64) (AccountPassword, error)
 }
 
 type accountPasswordDataAccessor struct {
@@ -22,9 +22,15 @@ func NewAccountPasswordDataAccessor(database Database) AccountPasswordDataAccess
 	return &accountPasswordDataAccessor{database: database}
 }
 
-// ComparePassword implements AccountPasswordDataAccessor.
-func (a *accountPasswordDataAccessor) ComparePassword(ctx context.Context, ofAccountID uint64, password string) error {
-	panic("unimplemented")
+// GetPassword implements AccountPasswordDataAccessor.
+func (a *accountPasswordDataAccessor) GetPassword(ctx context.Context, ofAccountID uint64) (AccountPassword, error) {
+	var foundPassword AccountPassword
+	result := a.database.Where("of_account_id = ?", ofAccountID).First(&foundPassword)
+	if result.Error != nil {
+		return AccountPassword{}, result.Error
+	}
+
+	return foundPassword, nil
 }
 
 // CreatePassword implements AccountPasswordDataAccessor.

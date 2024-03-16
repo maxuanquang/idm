@@ -3,6 +3,7 @@ auth:
     cost: 32
   token:
     duration: 900 # in seconds
+    rs512_key_pair_bit_size: 2048
 database:
   host: "0.0.0.0"
   port: 3306

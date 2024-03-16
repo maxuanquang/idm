@@ -33,10 +33,30 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 	accountDataAccessor := database.NewAccountDataAccessor(databaseDatabase)
 	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase)
 	hash := logic.NewHash()
-	account := logic.NewAccount(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash)
+	log := config.Log
+	logger, cleanup2, err := utils.InitializeLogger(log)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	tokenPublicKeyDataAccessor, err := database.NewTokenPublicKeyDataAccessor(databaseDatabase, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	auth := config.Auth
+	token, err := logic.NewToken(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	account := logic.NewAccount(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token)
 	idmServiceServer := grpc.NewHandler(account)
 	server := grpc.NewServer(idmServiceServer)
 	return server, func() {
+		cleanup2()
 		cleanup()
 	}, nil
 }

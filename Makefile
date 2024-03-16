@@ -30,4 +30,7 @@ generate:
 tidy:
 	go mod tidy
 
+server:
+	go run ./cmd/main.go
+
 .PHONY: proto, new_migration, up_migration, down_migration, tidy, wire, generate

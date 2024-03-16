@@ -39,7 +39,24 @@ func (h *Handler) CreateDownloadTask(ctx context.Context, in *idm.CreateDownload
 
 // CreateSession implements idm.IdmServiceServer.
 func (h *Handler) CreateSession(ctx context.Context, in *idm.CreateSessionRequest) (*idm.CreateSessionResponse, error) {
-	panic("unimplemented")
+	session, err := h.accountLogic.CreateSession(
+		ctx,
+		logic.CreateSessionInput{
+			AccountName: in.AccountName,
+			Password:    in.Password,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &idm.CreateSessionResponse{
+		Token: session.Token,
+		Account: &idm.Account{
+			Id:          session.AccountID,
+			AccountName: session.AccountName,
+		},
+	}, nil
 }
 
 // DeleteDownloadTask implements idm.IdmServiceServer.
