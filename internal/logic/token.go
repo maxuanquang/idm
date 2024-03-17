@@ -7,17 +7,19 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/maxuanquang/idm/internal/configs"
+	"github.com/maxuanquang/idm/internal/dataaccess/cache"
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
 	"github.com/maxuanquang/idm/internal/utils"
 	"go.uber.org/zap"
 )
 
 type Token interface {
-	CreateToken(ctx context.Context, accountID uint64) (string, time.Time, error)
+	CreateTokenString(ctx context.Context, accountID uint64) (string, time.Time, error)
 	GetAccountIDAndExpireTime(ctx context.Context, token string) (uint64, time.Time, error)
 	WithDatabase(database database.Database) Token
 }
@@ -27,6 +29,7 @@ func NewToken(
 	tokenPublicKeyDataAccessor database.TokenPublicKeyDataAccessor,
 	logger *zap.Logger,
 	authConfig configs.Auth,
+	tokenPublicKeyCache cache.TokenPublicKey,
 ) (Token, error) {
 
 	rsaKeyPair, err := generateRSAKeyPair(int(authConfig.Token.RS512KeyPairBitSize))
@@ -58,6 +61,7 @@ func NewToken(
 		authConfig:                 authConfig,
 		tokenPublicKeyID:           tokenPublicKeyID,
 		tokenPrivateKeyValue:       rsaKeyPair,
+		tokenPublicKeyCache:        tokenPublicKeyCache,
 	}, nil
 }
 
@@ -68,6 +72,7 @@ type token struct {
 	authConfig                 configs.Auth
 	tokenPublicKeyID           uint64
 	tokenPrivateKeyValue       *rsa.PrivateKey
+	tokenPublicKeyCache        cache.TokenPublicKey
 }
 
 // GetAccountIDAndExpireTime implements Token.
@@ -133,8 +138,8 @@ func (t *token) GetAccountIDAndExpireTime(ctx context.Context, tokenString strin
 
 }
 
-// CreateToken implements Token.
-func (t *token) CreateToken(ctx context.Context, accountID uint64) (string, time.Time, error) {
+// CreateTokenString implements Token.
+func (t *token) CreateTokenString(ctx context.Context, accountID uint64) (string, time.Time, error) {
 	logger := utils.LoggerWithContext(ctx, t.logger)
 
 	expiresAt := time.Now().Add(t.authConfig.Token.GetTokenDuration())
@@ -161,10 +166,26 @@ func (t *token) WithDatabase(database database.Database) Token {
 func (t *token) getJWTPublicKeyValue(ctx context.Context, tokenPublicKeyID uint64) (*rsa.PublicKey, error) {
 	logger := utils.LoggerWithContext(ctx, t.logger).With(zap.Uint64("tokenPublicKeyID", tokenPublicKeyID))
 
-	tokenPublicKeyValue, err := t.tokenPublicKeyDataAccessor.GetPublicKey(ctx, tokenPublicKeyID)
+	var tokenPublicKeyValue database.TokenPublicKey
+
+	cacheHit := true
+	bytes, err := t.tokenPublicKeyCache.Get(ctx, fmt.Sprintf("%d", tokenPublicKeyID))
 	if err != nil {
-		logger.Error("cannot get token's public key from database", zap.Error(err))
-		return nil, err
+		logger.With(zap.Error(err)).Warn("failed to get tokenPublicKeyValue from cache, will fall back to database")
+		cacheHit = false
+	} else {
+		tokenPublicKeyValue = database.TokenPublicKey{
+			TokenPublicKeyID:    tokenPublicKeyID,
+			TokenPublicKeyValue: bytes,
+		}
+	}
+
+	if !cacheHit {
+		tokenPublicKeyValue, err = t.tokenPublicKeyDataAccessor.GetPublicKey(ctx, tokenPublicKeyID)
+		if err != nil {
+			logger.Error("cannot get token's public key from database", zap.Error(err))
+			return nil, err
+		}
 	}
 
 	return jwt.ParseRSAPublicKeyFromPEM(tokenPublicKeyValue.TokenPublicKeyValue)

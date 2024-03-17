@@ -13,6 +13,7 @@ type Config struct {
 	Auth     Auth     `yaml:"auth"`
 	Database Database `yaml:"database"`
 	Log      Log      `yaml:"log"`
+	Cache    Cache    `yaml:"cache"`
 }
 
 func NewConfig(configFilePath ConfigFilePath) (Config, error) {

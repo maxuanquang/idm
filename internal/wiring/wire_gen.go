@@ -10,6 +10,7 @@ import (
 	"github.com/google/wire"
 	"github.com/maxuanquang/idm/internal/configs"
 	"github.com/maxuanquang/idm/internal/dataaccess"
+	"github.com/maxuanquang/idm/internal/dataaccess/cache"
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
 	"github.com/maxuanquang/idm/internal/handler"
 	"github.com/maxuanquang/idm/internal/handler/grpc"
@@ -46,13 +47,32 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 		return nil, nil, err
 	}
 	auth := config.Auth
-	token, err := logic.NewToken(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth)
+	tokenPublicKey, err := cache.NewTokenPublicKey()
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	account := logic.NewAccount(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token)
+	token, err := logic.NewToken(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth, tokenPublicKey)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	configsCache := config.Cache
+	client, err := cache.NewClient(configsCache, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	takenAccountName, err := cache.NewTakenAccountName(client)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	account := logic.NewAccount(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token, takenAccountName, logger)
 	idmServiceServer := grpc.NewHandler(account)
 	server := grpc.NewServer(idmServiceServer)
 	return server, func() {

@@ -10,3 +10,10 @@ database:
   username: "root"
   password: "secret"
   database: "idm"
+log:
+  level: "debug" # [debug, info, warn, error, panic]
+cache:
+  addr: "0.0.0.0:6379"
+  username: ""
+  password: ""
+  db: 0

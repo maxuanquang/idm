@@ -24,7 +24,6 @@ func InitializeLogger(logConfig configs.Log) (*zap.Logger, func(), error) {
 }
 
 func LoggerWithContext(ctx context.Context, logger *zap.Logger) *zap.Logger {
-	// TODO: Implement this
 	return logger
 }
 
