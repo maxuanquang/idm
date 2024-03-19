@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/maxuanquang/idm/configs"
 	"gopkg.in/yaml.v2"
 )
 
@@ -14,15 +15,24 @@ type Config struct {
 	Database Database `yaml:"database"`
 	Log      Log      `yaml:"log"`
 	Cache    Cache    `yaml:"cache"`
+	HTTP     HTTP     `yaml:"http"`
+	GRPC     GRPC     `yaml:"grpc"`
 }
 
 func NewConfig(configFilePath ConfigFilePath) (Config, error) {
-	configBytes, err := os.ReadFile(string(configFilePath))
-	if err != nil {
-		return Config{}, fmt.Errorf("error reading configuration file: %w", err)
+	var (
+		configBytes []byte = configs.DefaultConfigBytes
+		config      Config
+		err         error
+	)
+
+	if configFilePath != "" {
+		configBytes, err = os.ReadFile(string(configFilePath))
+		if err != nil {
+			return Config{}, fmt.Errorf("error reading configuration file: %w", err)
+		}
 	}
 
-	config := Config{}
 	err = yaml.Unmarshal(configBytes, &config)
 	if err != nil {
 		return Config{}, fmt.Errorf("error unmarshal configuration file: %w", err)

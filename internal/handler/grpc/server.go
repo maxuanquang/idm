@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/maxuanquang/idm/internal/configs"
 	"github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	"google.golang.org/grpc"
 )
@@ -13,19 +14,21 @@ type Server interface {
 	Start(ctx context.Context) error
 }
 
-func NewServer(handler idm.IdmServiceServer) Server {
+func NewServer(grpcConfig configs.GRPC, handler idm.IdmServiceServer) Server {
 	return &server{
-		handler: handler,
+		grpcConfig: grpcConfig,
+		handler:    handler,
 	}
 }
 
 type server struct {
-	handler idm.IdmServiceServer
+	grpcConfig configs.GRPC
+	handler    idm.IdmServiceServer
 }
 
 // Start implements Server.
 func (s *server) Start(ctx context.Context) error {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", 8080))
+	listener, err := net.Listen("tcp", s.grpcConfig.Address)
 	if err != nil {
 		return err
 	}
@@ -35,6 +38,6 @@ func (s *server) Start(ctx context.Context) error {
 	server := grpc.NewServer(opts...)
 	idm.RegisterIdmServiceServer(server, s.handler)
 
-	fmt.Println("gRPC server is running on :8080")
+	fmt.Printf("gRPC server is running on %s\n", s.grpcConfig.Address)
 	return server.Serve(listener)
 }

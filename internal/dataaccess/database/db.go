@@ -80,6 +80,15 @@ type Database interface {
 }
 
 func InitializeDB(dbConfig configs.Database) (Database, func(), error) {
+	dbMigrator, err := NewMigrator(dbConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	err = dbMigrator.Up(context.Background())
+	if err != nil {
+		return nil, nil, err
+	}
+
 	db, cleanup, err := InitializeGORMDB(dbConfig)
 	if err != nil {
 		return nil, nil, err

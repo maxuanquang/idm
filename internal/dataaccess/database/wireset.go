@@ -7,5 +7,6 @@ var WireSet = wire.NewSet(
 	NewAccountPasswordDataAccessor,
 	NewDownloadTaskDataAccessor,
 	NewTokenPublicKeyDataAccessor,
+	NewMigrator,
 	InitializeDB,
 )

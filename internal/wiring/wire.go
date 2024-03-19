@@ -9,10 +9,9 @@ import (
 	"github.com/maxuanquang/idm/internal/configs"
 	"github.com/maxuanquang/idm/internal/dataaccess"
 	"github.com/maxuanquang/idm/internal/handler"
-	"github.com/maxuanquang/idm/internal/handler/grpc"
-	"github.com/maxuanquang/idm/internal/handler/http"
 	"github.com/maxuanquang/idm/internal/logic"
 	"github.com/maxuanquang/idm/internal/utils"
+	"github.com/maxuanquang/idm/internal/app"
 )
 
 var WireSet = wire.NewSet(
@@ -21,16 +20,11 @@ var WireSet = wire.NewSet(
 	handler.WireSet,
 	logic.WireSet,
 	utils.WireSet,
+	app.WireSet,
 )
 
-func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, func(), error) {
+func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, func(), error) {
 	wire.Build(WireSet)
 
-	return nil, nil, nil
-}
-
-func InitializeHTTPServer(configFilePath configs.ConfigFilePath) (http.Server, func(), error) {
-	wire.Build(WireSet)
-
-	return nil, nil, nil
+	return app.Server{}, nil, nil
 }

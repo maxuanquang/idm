@@ -31,6 +31,6 @@ tidy:
 	go mod tidy
 
 server:
-	go run ./cmd/main.go
+	go run ./cmd/idm/main.go server
 
 .PHONY: proto, new_migration, up_migration, down_migration, tidy, wire, generate

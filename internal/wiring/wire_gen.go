@@ -8,6 +8,7 @@ package wiring
 
 import (
 	"github.com/google/wire"
+	"github.com/maxuanquang/idm/internal/app"
 	"github.com/maxuanquang/idm/internal/configs"
 	"github.com/maxuanquang/idm/internal/dataaccess"
 	"github.com/maxuanquang/idm/internal/dataaccess/cache"
@@ -21,21 +22,22 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, func(), error) {
+func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, func(), error) {
 	config, err := configs.NewConfig(configFilePath)
 	if err != nil {
-		return nil, nil, err
+		return app.Server{}, nil, err
 	}
+	configsGRPC := config.GRPC
 	configsDatabase := config.Database
 	databaseDatabase, cleanup, err := database.InitializeDB(configsDatabase)
 	if err != nil {
-		return nil, nil, err
+		return app.Server{}, nil, err
 	}
 	log := config.Log
 	logger, cleanup2, err := utils.InitializeLogger(log)
 	if err != nil {
 		cleanup()
-		return nil, nil, err
+		return app.Server{}, nil, err
 	}
 	accountDataAccessor := database.NewAccountDataAccessor(databaseDatabase, logger)
 	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase)
@@ -44,49 +46,51 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return nil, nil, err
+		return app.Server{}, nil, err
 	}
 	auth := config.Auth
 	tokenPublicKey, err := cache.NewTokenPublicKey()
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return nil, nil, err
+		return app.Server{}, nil, err
 	}
 	token, err := logic.NewToken(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth, tokenPublicKey)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return nil, nil, err
+		return app.Server{}, nil, err
 	}
 	configsCache := config.Cache
 	client, err := cache.NewClient(configsCache, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return nil, nil, err
+		return app.Server{}, nil, err
 	}
 	takenAccountName, err := cache.NewTakenAccountName(client)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return nil, nil, err
+		return app.Server{}, nil, err
 	}
 	account := logic.NewAccount(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token, takenAccountName, logger)
 	idmServiceServer := grpc.NewHandler(account)
-	server := grpc.NewServer(idmServiceServer)
-	return server, func() {
+	server := grpc.NewServer(configsGRPC, idmServiceServer)
+	configsHTTP := config.HTTP
+	httpServer := http.NewServer(configsHTTP, configsGRPC, logger)
+	appServer, err := app.NewServer(server, httpServer, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	return appServer, func() {
 		cleanup2()
 		cleanup()
 	}, nil
 }
 
-func InitializeHTTPServer(configFilePath configs.ConfigFilePath) (http.Server, func(), error) {
-	server := http.NewServer()
-	return server, func() {
-	}, nil
-}
-
 // wire.go:
 
-var WireSet = wire.NewSet(configs.WireSet, dataaccess.WireSet, handler.WireSet, logic.WireSet, utils.WireSet)
+var WireSet = wire.NewSet(configs.WireSet, dataaccess.WireSet, handler.WireSet, logic.WireSet, utils.WireSet, app.WireSet)
