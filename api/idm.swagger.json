@@ -152,8 +152,10 @@
         "tags": [
           "IdmService"
         ]
-      },
-      "put": {
+      }
+    },
+    "/v1/tasks/{downloadTaskId}": {
+      "delete": {
         "operationId": "IdmService_DeleteDownloadTask",
         "responses": {
           "200": {
@@ -171,20 +173,23 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "downloadTaskId",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/idmDeleteDownloadTaskRequest"
-            }
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
           "IdmService"
         ]
-      }
-    },
-    "/v1/tasks/{downloadTaskId}": {
+      },
       "put": {
         "operationId": "IdmService_UpdateDownloadTask",
         "responses": {
@@ -355,17 +360,6 @@
         },
         "account": {
           "$ref": "#/definitions/idmAccount"
-        }
-      }
-    },
-    "idmDeleteDownloadTaskRequest": {
-      "type": "object",
-      "properties": {
-        "token": {
-          "type": "string"
-        },
-        "downloadTask": {
-          "$ref": "#/definitions/idmDownloadTask"
         }
       }
     },

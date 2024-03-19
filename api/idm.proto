@@ -37,8 +37,7 @@ service IdmService {
     }
     rpc DeleteDownloadTask(DeleteDownloadTaskRequest) returns (DeleteDownloadTaskResponse) {
         option (google.api.http) = {
-            put : "/v1/tasks",
-            body : "*"
+            delete : "/v1/tasks/{download_task_id}",
         };
     }
     rpc GetDownloadTaskFile(GetDownloadTaskFileRequest) returns (stream GetDownloadTaskFileResponse) {
@@ -130,7 +129,7 @@ message UpdateDownloadTaskResponse { DownloadTask download_task = 1; }
 
 message DeleteDownloadTaskRequest {
     string token = 1;
-    DownloadTask download_task = 2;
+    uint64 download_task_id = 2;
 }
 
 message DeleteDownloadTaskResponse {}

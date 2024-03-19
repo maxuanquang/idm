@@ -20,12 +20,17 @@ type Handler struct {
 
 // CreateAccount implements idm.IdmServiceServer.
 func (h *Handler) CreateAccount(ctx context.Context, in *idm.CreateAccountRequest) (*idm.CreateAccountResponse, error) {
+	err := in.ValidateAll()
+	if err != nil {
+		return nil, responseError(err)
+	}
+
 	account, err := h.accountLogic.CreateAccount(ctx, logic.CreateAccountInput{
 		AccountName: in.AccountName,
 		Password:    in.Password,
 	})
 	if err != nil {
-		return nil, err
+		return nil, responseError(err)
 	}
 	return &idm.CreateAccountResponse{
 		AccountId: account.ID,
@@ -39,6 +44,11 @@ func (h *Handler) CreateDownloadTask(ctx context.Context, in *idm.CreateDownload
 
 // CreateSession implements idm.IdmServiceServer.
 func (h *Handler) CreateSession(ctx context.Context, in *idm.CreateSessionRequest) (*idm.CreateSessionResponse, error) {
+	err := in.ValidateAll()
+	if err != nil {
+		return nil, responseError(err)
+	}
+
 	session, err := h.accountLogic.CreateSession(
 		ctx,
 		logic.CreateSessionInput{
@@ -47,7 +57,7 @@ func (h *Handler) CreateSession(ctx context.Context, in *idm.CreateSessionReques
 		},
 	)
 	if err != nil {
-		return nil, err
+		return nil, responseError(err)
 	}
 
 	return &idm.CreateSessionResponse{

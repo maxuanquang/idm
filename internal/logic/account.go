@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,6 +10,9 @@ import (
 	"github.com/maxuanquang/idm/internal/utils"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type CreateAccountInput struct {
@@ -72,27 +74,19 @@ type account struct {
 
 // CreateAccount implements Account.
 func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (CreateAccountOutput, error) {
-	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.String("account_name", in.AccountName))
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.Any("create_account_input", in))
+
+	taken, err := a.isAccountNameTaken(ctx, in.AccountName)
+	if err != nil {
+		logger.Error("failed to check if account name taken", zap.Error(err))
+		return CreateAccountOutput{}, status.Error(codes.Internal, "failed to check if account name taken")
+	}
+	if taken {
+		return CreateAccountOutput{}, status.Error(codes.AlreadyExists, "account name already exists")
+	}
 
 	var createAccountOutput CreateAccountOutput
-
-	exists, err := a.takenAccountNameCache.Has(ctx, in.AccountName)
-	if err != nil {
-		logger.With(zap.Error(err)).Warn("failed to get account name from taken set in cache, will fall back to database")
-	}
-	if exists {
-		return CreateAccountOutput{}, errors.New("check account existence: account name existed")
-	}
-
-	err = a.database.Transaction(func(tx *gorm.DB) error {
-		// check account name taken
-		_, err := a.accountDataAccessor.GetAccountByName(ctx, in.AccountName)
-		if err == nil {
-			return errors.New("check account existence: account name existed")
-		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("check account existence: %w", err)
-		}
-
+	txErr := a.database.Transaction(func(tx *gorm.DB) error {
 		// create createdAccount
 		createdAccount, err := a.accountDataAccessor.CreateAccount(
 			ctx,
@@ -119,8 +113,9 @@ func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (Cre
 		createAccountOutput.AccountName = createdAccount.AccountName
 		return nil
 	})
-	if err != nil {
-		return CreateAccountOutput{}, err
+	if txErr != nil {
+		logger.With(zap.Error(txErr)).Error("create account transaction failed")
+		return CreateAccountOutput{}, status.Error(codes.Internal, txErr.Error())
 	}
 
 	err = a.takenAccountNameCache.Add(ctx, createAccountOutput.AccountName)
@@ -134,24 +129,36 @@ func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (Cre
 
 // CreateSession implements Account.
 func (a *account) CreateSession(ctx context.Context, in CreateSessionInput) (CreateSessionOutput, error) {
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.Any("create_session_input", in))
+
 	foundAccount, err := a.accountDataAccessor.GetAccountByName(ctx, in.AccountName)
 	if err != nil {
-		return CreateSessionOutput{}, fmt.Errorf("account name does not exist: %w", err)
+		logger.Error("failed to get account by name", zap.Error(err))
+		return CreateSessionOutput{}, status.Error(codes.Internal, "error getting account")
+	}
+	if foundAccount.AccountID == 0 {
+		return CreateSessionOutput{}, status.Error(codes.NotFound, "wrong account name or password")
 	}
 
 	foundPassword, err := a.passwordDataAccessor.GetPassword(ctx, foundAccount.AccountID)
 	if err != nil {
-		return CreateSessionOutput{}, fmt.Errorf("password does not exist: %w", err)
+		logger.Error("failed to get account password", zap.Error(err))
+		return CreateSessionOutput{}, status.Error(codes.Internal, "failed to get account password")
 	}
 
 	matched, err := a.hashLogic.IsHashEqual(ctx, in.Password, foundPassword.Hashed)
-	if err != nil || !matched {
-		return CreateSessionOutput{}, fmt.Errorf("wrong account name or password: %w", err)
+	if err != nil {
+		logger.Error("failed comparing password", zap.Error(err))
+		return CreateSessionOutput{}, status.Error(codes.Internal, "failed comparing password")
+	}
+	if !matched {
+		return CreateSessionOutput{}, status.Error(codes.NotFound, "wrong account name or password")
 	}
 
 	stringToken, expiresAt, err := a.tokenLogic.CreateTokenString(ctx, foundAccount.AccountID)
 	if err != nil {
-		return CreateSessionOutput{}, fmt.Errorf("can not create token: %w", err)
+		logger.Error("failed to create token", zap.Error(err))
+		return CreateSessionOutput{}, status.Error(codes.Internal, "failed to create token")
 	}
 
 	return CreateSessionOutput{
@@ -160,4 +167,35 @@ func (a *account) CreateSession(ctx context.Context, in CreateSessionInput) (Cre
 		AccountID:   foundAccount.AccountID,
 		AccountName: foundAccount.AccountName,
 	}, nil
+}
+
+func (a *account) isAccountNameTaken(ctx context.Context, accountName string) (bool, error) {
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.String("account_name", accountName))
+
+	// Check cache
+	taken, err := a.takenAccountNameCache.Has(ctx, accountName)
+	if err != nil {
+		logger.With(zap.Error(err)).Warn("failed to get account name from taken set in cache, will fall back to database")
+	}
+	if taken {
+		return true, nil
+	}
+
+	// check account name taken
+	foundAccount, err := a.accountDataAccessor.GetAccountByName(ctx, accountName)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get account name from database")
+		return false, err
+	}
+	if foundAccount.AccountID == 0 {
+		return false, nil
+	}
+
+	// add missed taken name to cache
+	err = a.takenAccountNameCache.Add(ctx, accountName)
+	if err != nil {
+		logger.With(zap.Error(err)).Warn("failed to add missed taken account name to cache")
+	}
+
+	return true, nil
 }

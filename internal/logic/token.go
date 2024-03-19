@@ -82,7 +82,7 @@ func (t *token) GetAccountIDAndExpireTime(ctx context.Context, tokenString strin
 	keyFunc := func(parsedToken *jwt.Token) (interface{}, error) {
 		if _, ok := parsedToken.Method.(*jwt.SigningMethodRSA); !ok {
 			logger.Error("unexpected signing method")
-			return nil, nil
+			return nil, errors.New("unexpected signing method")
 		}
 
 		claims, ok := parsedToken.Claims.(jwt.MapClaims)
@@ -113,7 +113,7 @@ func (t *token) GetAccountIDAndExpireTime(ctx context.Context, tokenString strin
 
 	if !parsedToken.Valid {
 		logger.Error("invalid token")
-		return 0, time.Time{}, err
+		return 0, time.Time{}, errors.New("invalid token")
 	}
 
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)

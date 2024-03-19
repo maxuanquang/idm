@@ -31,15 +31,15 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 	if err != nil {
 		return nil, nil, err
 	}
-	accountDataAccessor := database.NewAccountDataAccessor(databaseDatabase)
-	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase)
-	hash := logic.NewHash()
 	log := config.Log
 	logger, cleanup2, err := utils.InitializeLogger(log)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
+	accountDataAccessor := database.NewAccountDataAccessor(databaseDatabase, logger)
+	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase)
+	hash := logic.NewHash()
 	tokenPublicKeyDataAccessor, err := database.NewTokenPublicKeyDataAccessor(databaseDatabase, logger)
 	if err != nil {
 		cleanup2()

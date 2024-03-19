@@ -205,11 +205,35 @@ func local_request_IdmService_UpdateDownloadTask_0(ctx context.Context, marshale
 
 }
 
+var (
+	filter_IdmService_DeleteDownloadTask_0 = &utilities.DoubleArray{Encoding: map[string]int{"download_task_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+)
+
 func request_IdmService_DeleteDownloadTask_0(ctx context.Context, marshaler runtime.Marshaler, client IdmServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DeleteDownloadTaskRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["download_task_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "download_task_id")
+	}
+
+	protoReq.DownloadTaskId, err = runtime.Uint64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "download_task_id", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_IdmService_DeleteDownloadTask_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -222,7 +246,27 @@ func local_request_IdmService_DeleteDownloadTask_0(ctx context.Context, marshale
 	var protoReq DeleteDownloadTaskRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["download_task_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "download_task_id")
+	}
+
+	protoReq.DownloadTaskId, err = runtime.Uint64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "download_task_id", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_IdmService_DeleteDownloadTask_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -407,7 +451,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 
 	})
 
-	mux.Handle("PUT", pattern_IdmService_DeleteDownloadTask_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_IdmService_DeleteDownloadTask_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -415,7 +459,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/DeleteDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/DeleteDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks/{download_task_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -590,13 +634,13 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 
 	})
 
-	mux.Handle("PUT", pattern_IdmService_DeleteDownloadTask_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_IdmService_DeleteDownloadTask_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/DeleteDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/DeleteDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks/{download_task_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -648,7 +692,7 @@ var (
 
 	pattern_IdmService_UpdateDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "tasks", "download_task_id"}, ""))
 
-	pattern_IdmService_DeleteDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "tasks"}, ""))
+	pattern_IdmService_DeleteDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "tasks", "download_task_id"}, ""))
 
 	pattern_IdmService_GetDownloadTaskFile_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "tasks", "download_task_id", "files"}, ""))
 )
