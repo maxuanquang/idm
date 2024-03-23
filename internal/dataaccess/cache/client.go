@@ -3,6 +3,8 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -26,38 +28,54 @@ func NewClient(
 	cacheConfig configs.Cache,
 	logger *zap.Logger,
 ) (Client, error) {
+	switch cacheConfig.Type {
+	case configs.CacheTypeInMemory:
+		return NewInMemoryClient(cacheConfig, logger)
+	case configs.CacheTypeRedis:
+		return NewRedisClient(cacheConfig, logger)
+	default:
+		err := fmt.Errorf(`invalid cache type, expect one of ["redis", "in-memory"], got %s`, string(cacheConfig.Type))
+		logger.With(zap.Error(err)).Error("invalid cache type")
+		return nil, err
+	}
+}
 
-	redisClient := redis.NewClient(&redis.Options{
+func NewRedisClient(
+	cacheConfig configs.Cache,
+	logger *zap.Logger,
+) (Client, error) {
+
+	client := redis.NewClient(&redis.Options{
 		Addr:     cacheConfig.Addr,
 		Username: cacheConfig.Username,
 		Password: cacheConfig.Password,
 		DB:       cacheConfig.DB,
 	})
 
-	_, err := redisClient.Ping(context.Background()).Result()
+	_, err := client.Ping(context.Background()).Result()
 	if err != nil {
 		logger.Error("can not connect to redis client", zap.Error(err))
 		return nil, err
 	}
 
-	return &client{
-		redisClient: redisClient,
-		logger:      logger,
+	return &redisClient{
+		client: client,
+		logger: logger,
 	}, nil
 }
 
-type client struct {
-	redisClient *redis.Client
-	logger      *zap.Logger
+type redisClient struct {
+	client *redis.Client
+	logger *zap.Logger
 }
 
 // AddToSet implements Client.
-func (c *client) AddToSet(ctx context.Context, key string, value ...interface{}) error {
+func (c *redisClient) AddToSet(ctx context.Context, key string, value ...interface{}) error {
 	logger := utils.LoggerWithContext(ctx, c.logger).
 		With(zap.String("key", key)).
 		With(zap.Any("value", value))
 
-	err := c.redisClient.SAdd(ctx, key, value).Err()
+	err := c.client.SAdd(ctx, key, value).Err()
 	if err != nil {
 		logger.Error("failed to add value to set", zap.Error(err))
 		return err
@@ -66,12 +84,12 @@ func (c *client) AddToSet(ctx context.Context, key string, value ...interface{})
 }
 
 // IsValueInSet implements Client.
-func (c *client) IsValueInSet(ctx context.Context, key string, value interface{}) (bool, error) {
+func (c *redisClient) IsValueInSet(ctx context.Context, key string, value interface{}) (bool, error) {
 	logger := utils.LoggerWithContext(ctx, c.logger).
 		With(zap.String("key", key)).
 		With(zap.Any("value", value))
 
-	exists, err := c.redisClient.SIsMember(ctx, key, value).Result()
+	exists, err := c.client.SIsMember(ctx, key, value).Result()
 	if err != nil {
 		logger.Error("failed to find value in set", zap.Error(err))
 		return false, err
@@ -80,10 +98,10 @@ func (c *client) IsValueInSet(ctx context.Context, key string, value interface{}
 }
 
 // Get implements Client.
-func (c *client) Get(ctx context.Context, key string) (any, error) {
+func (c *redisClient) Get(ctx context.Context, key string) (any, error) {
 	logger := utils.LoggerWithContext(ctx, c.logger).With(zap.String("key", key))
 
-	value, err := c.redisClient.Get(ctx, key).Result()
+	value, err := c.client.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, ErrCacheMissed
@@ -96,16 +114,80 @@ func (c *client) Get(ctx context.Context, key string) (any, error) {
 }
 
 // Set implements Client.
-func (c *client) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
+func (c *redisClient) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	logger := utils.LoggerWithContext(ctx, c.logger).
 		With(zap.String("key", key)).
 		With(zap.Any("value", value)).
 		With(zap.Duration("ttl", ttl))
 
-	if err := c.redisClient.Set(ctx, key, value, ttl).Err(); err != nil {
+	if err := c.client.Set(ctx, key, value, ttl).Err(); err != nil {
 		logger.Error("failed to set value into cache", zap.Error(err))
 		return err
 	}
+
+	return nil
+}
+
+func NewInMemoryClient(
+	cacheConfig configs.Cache,
+	logger *zap.Logger,
+) (Client, error) {
+	return &inMemoryClient{
+		cache:      make(map[string]any),
+		cacheMutex: &sync.Mutex{},
+		logger:     logger,
+	}, nil
+}
+
+type inMemoryClient struct {
+	cache      map[string]any
+	cacheMutex *sync.Mutex
+	logger     *zap.Logger
+}
+
+// AddToSet implements Client.
+func (i *inMemoryClient) AddToSet(ctx context.Context, key string, value ...any) error {
+	i.cacheMutex.Lock()
+	defer i.cacheMutex.Unlock()
+
+	if _, ok := i.cache[key]; !ok {
+		i.cache[key] = make(map[any]struct{})
+	}
+
+	set := i.cache[key].(map[any]struct{})
+	for _, v := range value {
+		set[v] = struct{}{}
+	}
+
+	return nil
+}
+
+// Get implements Client.
+func (i *inMemoryClient) Get(ctx context.Context, key string) (any, error) {
+	if val, ok := i.cache[key]; ok {
+		return val, nil
+	}
+
+	return nil, ErrCacheMissed
+}
+
+// IsValueInSet implements Client.
+func (i *inMemoryClient) IsValueInSet(ctx context.Context, key string, value any) (bool, error) {
+	if set, ok := i.cache[key].(map[any]struct{}); ok {
+		if _, exists := set[value]; exists {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// Set implements Client.
+func (i *inMemoryClient) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
+	i.cacheMutex.Lock()
+	defer i.cacheMutex.Unlock()
+
+	i.cache[key] = value
 
 	return nil
 }

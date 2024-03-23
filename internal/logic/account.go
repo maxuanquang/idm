@@ -88,7 +88,7 @@ func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (Cre
 	var createAccountOutput CreateAccountOutput
 	txErr := a.database.Transaction(func(tx *gorm.DB) error {
 		// create createdAccount
-		createdAccount, err := a.accountDataAccessor.CreateAccount(
+		createdAccount, err := a.accountDataAccessor.WithDatabaseTransaction(tx).CreateAccount(
 			ctx,
 			database.Account{
 				AccountName: in.AccountName,
@@ -104,7 +104,7 @@ func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (Cre
 			return fmt.Errorf("error hashing password: %w", err)
 		}
 
-		_, err = a.passwordDataAccessor.CreatePassword(ctx, createdAccount.AccountID, hashedPassword)
+		_, err = a.passwordDataAccessor.WithDatabaseTransaction(tx).CreatePassword(ctx, createdAccount.AccountID, hashedPassword)
 		if err != nil {
 			return fmt.Errorf("error creating password: %w", err)
 		}

@@ -5,6 +5,7 @@ auth:
     duration: 900 # in seconds
     rs512_key_pair_bit_size: 2048
 database:
+  type: "mysql"
   host: "0.0.0.0"
   port: 3306
   username: "root"
@@ -13,6 +14,7 @@ database:
 log:
   level: "debug" # [debug, info, warn, error, panic]
 cache:
+  type: "redis" # [redis, in-memory]
   addr: "0.0.0.0:6379"
   username: ""
   password: ""

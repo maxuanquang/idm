@@ -23,6 +23,7 @@ type AccountDataAccessor interface {
 	CreateAccount(ctx context.Context, account Account) (Account, error)
 	GetAccountByID(ctx context.Context, id uint64) (Account, error)
 	GetAccountByName(ctx context.Context, name string) (Account, error)
+	WithDatabaseTransaction(database Database) AccountDataAccessor
 }
 
 func NewAccountDataAccessor(database Database, logger *zap.Logger) AccountDataAccessor {
@@ -88,4 +89,11 @@ func (a *accountDataAccessor) GetAccountByName(ctx context.Context, name string)
 	}
 
 	return foundAccount, nil
+}
+
+// WithDatabaseTransaction implements AccountDataAccessor.
+func (a *accountDataAccessor) WithDatabaseTransaction(database Database) AccountDataAccessor {
+	return &accountDataAccessor{
+		database: database,
+	}
 }

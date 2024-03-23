@@ -12,6 +12,7 @@ type AccountPassword struct {
 type AccountPasswordDataAccessor interface {
 	CreatePassword(ctx context.Context, ofAccountID uint64, hashedPassword string) (AccountPassword, error)
 	GetPassword(ctx context.Context, ofAccountID uint64) (AccountPassword, error)
+	WithDatabaseTransaction(database Database) AccountPasswordDataAccessor
 }
 
 type accountPasswordDataAccessor struct {
@@ -45,4 +46,11 @@ func (a *accountPasswordDataAccessor) CreatePassword(ctx context.Context, ofAcco
 	}
 
 	return createdPassword, nil
+}
+
+// WithDatabaseTransaction implements AccountPasswordDataAccessor.
+func (a *accountPasswordDataAccessor) WithDatabaseTransaction(database Database) AccountPasswordDataAccessor {
+	return &accountPasswordDataAccessor{
+		database: database,
+	}
 }
