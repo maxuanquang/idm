@@ -37,21 +37,21 @@ type CreateSessionOutput struct {
 	AccountName string
 }
 
-type Account interface {
+type AccountLogic interface {
 	CreateAccount(ctx context.Context, in CreateAccountInput) (CreateAccountOutput, error)
 	CreateSession(ctx context.Context, in CreateSessionInput) (CreateSessionOutput, error)
 }
 
-func NewAccount(
+func NewAccountLogic(
 	database database.Database,
 	accountDataAccessor database.AccountDataAccessor,
 	passwordDataAccessor database.AccountPasswordDataAccessor,
-	hashLogic Hash,
-	tokenLogic Token,
+	hashLogic HashLogic,
+	tokenLogic TokenLogic,
 	takenAccountNameCache cache.TakenAccountName,
 	logger *zap.Logger,
-) Account {
-	return &account{
+) AccountLogic {
+	return &accountLogic{
 		database:              database,
 		accountDataAccessor:   accountDataAccessor,
 		passwordDataAccessor:  passwordDataAccessor,
@@ -62,18 +62,18 @@ func NewAccount(
 	}
 }
 
-type account struct {
+type accountLogic struct {
 	database              database.Database
 	accountDataAccessor   database.AccountDataAccessor
 	passwordDataAccessor  database.AccountPasswordDataAccessor
-	hashLogic             Hash
-	tokenLogic            Token
+	hashLogic             HashLogic
+	tokenLogic            TokenLogic
 	takenAccountNameCache cache.TakenAccountName
 	logger                *zap.Logger
 }
 
 // CreateAccount implements Account.
-func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (CreateAccountOutput, error) {
+func (a *accountLogic) CreateAccount(ctx context.Context, in CreateAccountInput) (CreateAccountOutput, error) {
 	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.Any("create_account_input", in))
 
 	taken, err := a.isAccountNameTaken(ctx, in.AccountName)
@@ -128,7 +128,7 @@ func (a *account) CreateAccount(ctx context.Context, in CreateAccountInput) (Cre
 }
 
 // CreateSession implements Account.
-func (a *account) CreateSession(ctx context.Context, in CreateSessionInput) (CreateSessionOutput, error) {
+func (a *accountLogic) CreateSession(ctx context.Context, in CreateSessionInput) (CreateSessionOutput, error) {
 	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.Any("create_session_input", in))
 
 	foundAccount, err := a.accountDataAccessor.GetAccountByName(ctx, in.AccountName)
@@ -169,7 +169,7 @@ func (a *account) CreateSession(ctx context.Context, in CreateSessionInput) (Cre
 	}, nil
 }
 
-func (a *account) isAccountNameTaken(ctx context.Context, accountName string) (bool, error) {
+func (a *accountLogic) isAccountNameTaken(ctx context.Context, accountName string) (bool, error) {
 	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.String("account_name", accountName))
 
 	// Check cache

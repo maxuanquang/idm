@@ -395,6 +395,9 @@
         },
         "downloadStatus": {
           "$ref": "#/definitions/idmDownloadStatus"
+        },
+        "metadata": {
+          "type": "string"
         }
       }
     },

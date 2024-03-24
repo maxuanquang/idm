@@ -18,19 +18,19 @@ import (
 	"go.uber.org/zap"
 )
 
-type Token interface {
+type TokenLogic interface {
 	CreateTokenString(ctx context.Context, accountID uint64) (string, time.Time, error)
 	GetAccountIDAndExpireTime(ctx context.Context, token string) (uint64, time.Time, error)
-	WithDatabase(database database.Database) Token
+	WithDatabase(database database.Database) TokenLogic
 }
 
-func NewToken(
+func NewTokenLogic(
 	accountDataAccessor database.AccountDataAccessor,
 	tokenPublicKeyDataAccessor database.TokenPublicKeyDataAccessor,
 	logger *zap.Logger,
 	authConfig configs.Auth,
 	tokenPublicKeyCache cache.TokenPublicKey,
-) (Token, error) {
+) (TokenLogic, error) {
 
 	rsaKeyPair, err := generateRSAKeyPair(int(authConfig.Token.RS512KeyPairBitSize))
 	if err != nil {
@@ -54,7 +54,7 @@ func NewToken(
 		return nil, err
 	}
 
-	return &token{
+	return &tokenLogic{
 		accountDataAccessor:        accountDataAccessor,
 		tokenPublicKeyDataAccessor: tokenPublicKeyDataAccessor,
 		logger:                     logger,
@@ -65,7 +65,7 @@ func NewToken(
 	}, nil
 }
 
-type token struct {
+type tokenLogic struct {
 	accountDataAccessor        database.AccountDataAccessor
 	tokenPublicKeyDataAccessor database.TokenPublicKeyDataAccessor
 	logger                     *zap.Logger
@@ -76,7 +76,7 @@ type token struct {
 }
 
 // GetAccountIDAndExpireTime implements Token.
-func (t *token) GetAccountIDAndExpireTime(ctx context.Context, tokenString string) (uint64, time.Time, error) {
+func (t *tokenLogic) GetAccountIDAndExpireTime(ctx context.Context, tokenString string) (uint64, time.Time, error) {
 	logger := utils.LoggerWithContext(ctx, t.logger)
 
 	keyFunc := func(parsedToken *jwt.Token) (interface{}, error) {
@@ -139,7 +139,7 @@ func (t *token) GetAccountIDAndExpireTime(ctx context.Context, tokenString strin
 }
 
 // CreateTokenString implements Token.
-func (t *token) CreateTokenString(ctx context.Context, accountID uint64) (string, time.Time, error) {
+func (t *tokenLogic) CreateTokenString(ctx context.Context, accountID uint64) (string, time.Time, error) {
 	logger := utils.LoggerWithContext(ctx, t.logger)
 
 	expiresAt := time.Now().Add(t.authConfig.Token.GetTokenDuration())
@@ -159,11 +159,11 @@ func (t *token) CreateTokenString(ctx context.Context, accountID uint64) (string
 }
 
 // WithDatabase implements Token.
-func (t *token) WithDatabase(database database.Database) Token {
+func (t *tokenLogic) WithDatabase(database database.Database) TokenLogic {
 	panic("unimplemented")
 }
 
-func (t *token) getJWTPublicKeyValue(ctx context.Context, tokenPublicKeyID uint64) (*rsa.PublicKey, error) {
+func (t *tokenLogic) getJWTPublicKeyValue(ctx context.Context, tokenPublicKeyID uint64) (*rsa.PublicKey, error) {
 	logger := utils.LoggerWithContext(ctx, t.logger).With(zap.Uint64("tokenPublicKeyID", tokenPublicKeyID))
 
 	var tokenPublicKeyValue database.TokenPublicKey

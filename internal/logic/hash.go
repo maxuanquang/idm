@@ -8,21 +8,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Hash interface {
+type HashLogic interface {
 	HashPassword(ctx context.Context, plainPassword string) (string, error)
 	IsHashEqual(ctx context.Context, plainPassword string, hashedPassword string) (bool, error)
 }
 
-type hash struct {
+type hashLogic struct {
 	authConfig configs.Auth
 }
 
-func NewHash() Hash {
-	return &hash{}
+func NewHashLogic() HashLogic {
+	return &hashLogic{}
 }
 
 // HashPassword implements Hash.
-func (h *hash) HashPassword(ctx context.Context, plainPassword string) (string, error) {
+func (h *hashLogic) HashPassword(ctx context.Context, plainPassword string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(plainPassword), h.authConfig.Hash.Cost)
 	if err != nil {
 		return "", fmt.Errorf("error hashing password: %w", err)
@@ -31,7 +31,7 @@ func (h *hash) HashPassword(ctx context.Context, plainPassword string) (string, 
 }
 
 // IsHashEqual implements Hash.
-func (h *hash) IsHashEqual(ctx context.Context, plainPassword string, hashedPassword string) (bool, error) {
+func (h *hashLogic) IsHashEqual(ctx context.Context, plainPassword string, hashedPassword string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
 	if err != nil {
 		return false, fmt.Errorf("error comparing passwords: %w", err)

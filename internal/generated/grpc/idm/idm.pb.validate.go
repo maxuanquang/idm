@@ -196,6 +196,8 @@ func (m *DownloadTask) validate(all bool) error {
 
 	// no validation rules for DownloadStatus
 
+	// no validation rules for Metadata
+
 	if len(errors) > 0 {
 		return DownloadTaskMultiError(errors)
 	}

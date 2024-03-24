@@ -7,7 +7,7 @@ import (
 	"github.com/maxuanquang/idm/internal/logic"
 )
 
-func NewHandler(accountLogic logic.Account) idm.IdmServiceServer {
+func NewHandler(accountLogic logic.AccountLogic) idm.IdmServiceServer {
 	return &Handler{
 		accountLogic: accountLogic,
 	}
@@ -15,7 +15,7 @@ func NewHandler(accountLogic logic.Account) idm.IdmServiceServer {
 
 type Handler struct {
 	idm.UnimplementedIdmServiceServer
-	accountLogic logic.Account
+	accountLogic logic.AccountLogic
 }
 
 // CreateAccount implements idm.IdmServiceServer.
@@ -35,11 +35,6 @@ func (h *Handler) CreateAccount(ctx context.Context, in *idm.CreateAccountReques
 	return &idm.CreateAccountResponse{
 		AccountId: account.ID,
 	}, nil
-}
-
-// CreateDownloadTask implements idm.IdmServiceServer.
-func (h *Handler) CreateDownloadTask(ctx context.Context, in *idm.CreateDownloadTaskRequest) (*idm.CreateDownloadTaskResponse, error) {
-	panic("unimplemented")
 }
 
 // CreateSession implements idm.IdmServiceServer.
@@ -69,9 +64,12 @@ func (h *Handler) CreateSession(ctx context.Context, in *idm.CreateSessionReques
 	}, nil
 }
 
-// DeleteDownloadTask implements idm.IdmServiceServer.
-func (h *Handler) DeleteDownloadTask(ctx context.Context, in *idm.DeleteDownloadTaskRequest) (*idm.DeleteDownloadTaskResponse, error) {
+// CreateDownloadTask implements idm.IdmServiceServer.
+func (h *Handler) CreateDownloadTask(ctx context.Context, in *idm.CreateDownloadTaskRequest) (*idm.CreateDownloadTaskResponse, error) {
 	panic("unimplemented")
+	// When create a download task
+	// 1. Producer will send a task to kafka
+	// 2. Consumer will take that and download
 }
 
 // GetDownloadTaskFile implements idm.IdmServiceServer.
@@ -86,5 +84,10 @@ func (h *Handler) GetDownloadTaskList(ctx context.Context, in *idm.GetDownloadTa
 
 // UpdateDownloadTask implements idm.IdmServiceServer.
 func (h *Handler) UpdateDownloadTask(ctx context.Context, in *idm.UpdateDownloadTaskRequest) (*idm.UpdateDownloadTaskResponse, error) {
+	panic("unimplemented")
+}
+
+// DeleteDownloadTask implements idm.IdmServiceServer.
+func (h *Handler) DeleteDownloadTask(ctx context.Context, in *idm.DeleteDownloadTaskRequest) (*idm.DeleteDownloadTaskResponse, error) {
 	panic("unimplemented")
 }

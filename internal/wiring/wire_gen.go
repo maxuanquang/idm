@@ -41,7 +41,7 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 	}
 	accountDataAccessor := database.NewAccountDataAccessor(databaseDatabase, logger)
 	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase)
-	hash := logic.NewHash()
+	hash := logic.NewHashLogic()
 	tokenPublicKeyDataAccessor, err := database.NewTokenPublicKeyDataAccessor(databaseDatabase, logger)
 	if err != nil {
 		cleanup2()
@@ -55,7 +55,7 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 		cleanup()
 		return app.Server{}, nil, err
 	}
-	token, err := logic.NewToken(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth, tokenPublicKey)
+	token, err := logic.NewTokenLogic(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth, tokenPublicKey)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -74,7 +74,7 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 		cleanup()
 		return app.Server{}, nil, err
 	}
-	account := logic.NewAccount(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token, takenAccountName, logger)
+	account := logic.NewAccountLogic(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token, takenAccountName, logger)
 	idmServiceServer := grpc.NewHandler(account)
 	server := grpc.NewServer(configsGRPC, idmServiceServer)
 	configsHTTP := config.HTTP

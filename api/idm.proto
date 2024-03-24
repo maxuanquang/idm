@@ -71,6 +71,7 @@ message DownloadTask {
     DownloadType download_type = 3;
     string url = 4;
     DownloadStatus download_status = 5;
+    string metadata = 6;
 }
 
 message CreateAccountRequest {
