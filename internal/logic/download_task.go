@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
+	"github.com/maxuanquang/idm/internal/dataaccess/mq/producer"
 	"github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	"github.com/maxuanquang/idm/internal/utils"
 	"go.uber.org/zap"
@@ -55,33 +56,44 @@ type DownloadTaskLogic interface {
 	DeleteDownloadTask(ctx context.Context, in DeleteDownloadTaskInput) error
 }
 
-func NewDownloadTaskLogic() (DownloadTaskLogic, error) {
-	return &downloadTaskLogic{}, nil
+func NewDownloadTaskLogic(
+	tokenLogic TokenLogic,
+	downloadTaskDataAccessor database.DownloadTaskDataAccessor,
+	downloadTaskCreatedProducer producer.DownloadTaskCreatedProducer,
+	database database.Database,
+	logger *zap.Logger,
+) (DownloadTaskLogic, error) {
+	return &downloadTaskLogic{
+		tokenLogic:                  tokenLogic,
+		downloadTaskDataAccessor:    downloadTaskDataAccessor,
+		downloadTaskCreatedProducer: downloadTaskCreatedProducer,
+		database:                    database,
+		logger:                      logger,
+	}, nil
 }
 
 type downloadTaskLogic struct {
-	tokenLogic               TokenLogic
-	downloadTaskDataAccessor database.DownloadTaskDataAccessor
-	// messageProducer
-	// messageConsumer
-	database database.Database
-	logger   *zap.Logger
+	tokenLogic                  TokenLogic
+	downloadTaskDataAccessor    database.DownloadTaskDataAccessor
+	downloadTaskCreatedProducer producer.DownloadTaskCreatedProducer
+	database                    database.Database
+	logger                      *zap.Logger
 }
 
 // CreateDownloadTask implements DownloadTaskLogic.
 func (d *downloadTaskLogic) CreateDownloadTask(ctx context.Context, in CreateDownloadTaskInput) (CreateDownloadTaskOutput, error) {
 	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("create_download_task_input", in))
-	
+
 	accountID, _, err := d.tokenLogic.GetAccountIDAndExpireTime(ctx, in.Token)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account id and expire time from token")
 		return CreateDownloadTaskOutput{}, status.Error(codes.Unauthenticated, "authentication token is invalid")
 	}
-	
+
 	var createdDownloadTask database.DownloadTask
 	txErr := d.database.Transaction(func(tx *gorm.DB) error {
 		var err error
-		
+
 		createdDownloadTask, err = d.downloadTaskDataAccessor.WithDatabase(tx).CreateDownloadTask(ctx, database.DownloadTask{
 			OfAccountID:    accountID,
 			DownloadType:   int16(in.Type),
@@ -93,10 +105,14 @@ func (d *downloadTaskLogic) CreateDownloadTask(ctx context.Context, in CreateDow
 			logger.With(zap.Error(err)).Error("failed to create download task")
 			return err
 		}
-		
-		// TODO: add operations from message queue
-		// 1. After done creating task in db, send a message to queue
-		// 2. Downloader will receive message from queue, do downloading
+
+		err = d.downloadTaskCreatedProducer.Produce(ctx, producer.DownloadTask{
+			DownloadTask: createdDownloadTask,
+		})
+		if err != nil {
+			logger.With(zap.Error(err)).Error("failed to produce message download task created")
+			return err
+		}
 
 		return nil
 	})
@@ -190,7 +206,8 @@ func (d *downloadTaskLogic) UpdateDownloadTask(ctx context.Context, in UpdateDow
 		return nil
 	})
 	if txErr != nil {
-		return UpdateDownloadTaskOutput{}, txErr
+		logger.With(zap.Error(txErr)).Error("transaction failed")
+		return UpdateDownloadTaskOutput{}, status.Error(codes.Internal, txErr.Error())
 	}
 
 	// Return the updated download task in the output.
