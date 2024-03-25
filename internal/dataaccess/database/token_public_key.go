@@ -54,8 +54,7 @@ func (t *tokenPublicKeyDataAccessor) GetPublicKey(ctx context.Context, tokenPubl
 	logger := utils.LoggerWithContext(ctx, t.logger)
 
 	var foundTokenPublicKey TokenPublicKey
-
-	result := t.database.Where("token_public_key_id = ?", tokenPublicKeyID).Scan(&foundTokenPublicKey)
+	result := t.database.First(&foundTokenPublicKey, tokenPublicKeyID)
 	if result.Error != nil {
 		logger.Error("failed to get public key", zap.Error(result.Error))
 		return TokenPublicKey{}, result.Error

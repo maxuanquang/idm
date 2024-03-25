@@ -23,3 +23,6 @@ grpc:
   address: "0.0.0.0:8080"
 http:
   address: "0.0.0.0:8081"
+mq:
+  addresses: ["0.0.0.0:9092"]
+  client_id: "1"

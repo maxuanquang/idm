@@ -29,7 +29,7 @@ type DownloadTaskDataAccessor interface {
 	GetDownloadTaskCountOfAccount(ctx context.Context, accountID uint64) (uint64, error)
 	UpdateDownloadTask(ctx context.Context, downloadTask DownloadTask) error
 	DeleteDownloadTask(ctx context.Context, downloadTaskID uint64) error
-	WithDatabase(database Database) DownloadTaskDataAccessor
+	WithDatabaseTransaction(database Database) DownloadTaskDataAccessor
 }
 
 func NewDownloadTaskDataAccessor(database Database, logger *zap.Logger) DownloadTaskDataAccessor {
@@ -46,7 +46,7 @@ type downloadTaskDataAccessor struct {
 
 // CreateDownloadTask implements DownloadTaskDataAccessor.
 func (d *downloadTaskDataAccessor) CreateDownloadTask(ctx context.Context, downloadTask DownloadTask) (DownloadTask, error) {
-	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("downloadTask", downloadTask))
+	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("downloadTask", nil))
 
 	var createdDownloadTask = downloadTask
 	createdDownloadTask.DownloadTaskID = 0
@@ -131,9 +131,10 @@ func (d *downloadTaskDataAccessor) DeleteDownloadTask(ctx context.Context, downl
 	return nil
 }
 
-// WithDatabase implements DownloadTaskDataAccessor.
-func (d *downloadTaskDataAccessor) WithDatabase(database Database) DownloadTaskDataAccessor {
+// WithDatabaseTransaction implements DownloadTaskDataAccessor.
+func (d *downloadTaskDataAccessor) WithDatabaseTransaction(database Database) DownloadTaskDataAccessor {
 	return &downloadTaskDataAccessor{
 		database: database,
+		logger:   d.logger,
 	}
 }

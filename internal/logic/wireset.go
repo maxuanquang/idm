@@ -6,4 +6,5 @@ var WireSet = wire.NewSet(
 	NewAccountLogic,
 	NewHashLogic,
 	NewTokenLogic,
+	NewDownloadTaskLogic,
 )

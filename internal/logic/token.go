@@ -53,6 +53,10 @@ func NewTokenLogic(
 		logger.Error("failed to create token public key", zap.Error(err))
 		return nil, err
 	}
+	err = tokenPublicKeyCache.Set(context.Background(), fmt.Sprint(tokenPublicKeyID), publicKeyBytes)
+	if err != nil {
+		logger.With(zap.Error(err)).Warn("can not set token public key in cache")
+	}
 
 	return &tokenLogic{
 		accountDataAccessor:        accountDataAccessor,

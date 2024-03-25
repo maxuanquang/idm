@@ -95,5 +95,6 @@ func (a *accountDataAccessor) GetAccountByName(ctx context.Context, name string)
 func (a *accountDataAccessor) WithDatabaseTransaction(database Database) AccountDataAccessor {
 	return &accountDataAccessor{
 		database: database,
+		logger:   a.logger,
 	}
 }

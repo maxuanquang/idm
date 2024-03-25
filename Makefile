@@ -44,7 +44,7 @@ server:
 
 .PHONY: docker-compose-dev-up
 docker-compose-dev-up:
-	docker compose -f ./internal/deployments/docker-compose.dev.yml up
+	docker compose -f ./internal/deployments/docker-compose.dev.yml up -d
 
 .PHONY: docker-compose-dev-down
 docker-compose-dev-down:

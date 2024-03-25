@@ -30,7 +30,7 @@ type GetDownloadTaskListInput struct {
 }
 
 type GetDownloadTaskListOutput struct {
-	DownloadTaskList       []idm.DownloadTask
+	DownloadTaskList       []*idm.DownloadTask
 	TotalDownloadTaskCount uint64
 }
 
@@ -94,7 +94,7 @@ func (d *downloadTaskLogic) CreateDownloadTask(ctx context.Context, in CreateDow
 	txErr := d.database.Transaction(func(tx *gorm.DB) error {
 		var err error
 
-		createdDownloadTask, err = d.downloadTaskDataAccessor.WithDatabase(tx).CreateDownloadTask(ctx, database.DownloadTask{
+		createdDownloadTask, err = d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).CreateDownloadTask(ctx, database.DownloadTask{
 			OfAccountID:    accountID,
 			DownloadType:   int16(in.Type),
 			DownloadURL:    in.URL,
@@ -157,9 +157,9 @@ func (d *downloadTaskLogic) GetDownloadTaskList(ctx context.Context, in GetDownl
 	}
 
 	// Construct the output with the retrieved download tasks and total count.
-	var outTaskList []idm.DownloadTask
+	var outTaskList []*idm.DownloadTask
 	for _, task := range downloadTasks {
-		outTaskList = append(outTaskList, idm.DownloadTask{
+		outTaskList = append(outTaskList, &idm.DownloadTask{
 			Id:             task.DownloadTaskID,
 			OfAccount:      nil,
 			DownloadType:   idm.DownloadType(task.DownloadType),
@@ -189,14 +189,14 @@ func (d *downloadTaskLogic) UpdateDownloadTask(ctx context.Context, in UpdateDow
 	// Implement the logic to update the download task based on the input parameters
 	var updatedTask database.DownloadTask
 	txErr := d.database.Transaction(func(tx *gorm.DB) error {
-		downloadTask, err := d.downloadTaskDataAccessor.WithDatabase(tx).GetDownloadTask(ctx, in.DownloadTaskID)
+		downloadTask, err := d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).GetDownloadTask(ctx, in.DownloadTaskID)
 		if err != nil {
 			logger.With(zap.Error(err)).Error("failed to get download task")
 			return err
 		}
 
 		downloadTask.DownloadURL = in.URL
-		err = d.downloadTaskDataAccessor.WithDatabase(tx).UpdateDownloadTask(ctx, downloadTask)
+		err = d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).UpdateDownloadTask(ctx, downloadTask)
 		if err != nil {
 			logger.With(zap.Error(err)).Error("failed to update download task")
 			return err

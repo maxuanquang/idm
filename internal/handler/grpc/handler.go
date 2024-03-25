@@ -7,22 +7,27 @@ import (
 	"github.com/maxuanquang/idm/internal/logic"
 )
 
-func NewHandler(accountLogic logic.AccountLogic) idm.IdmServiceServer {
+func NewHandler(
+	accountLogic logic.AccountLogic,
+	downloadTaskLogic logic.DownloadTaskLogic,
+) idm.IdmServiceServer {
 	return &Handler{
-		accountLogic: accountLogic,
+		accountLogic:      accountLogic,
+		downloadTaskLogic: downloadTaskLogic,
 	}
 }
 
 type Handler struct {
 	idm.UnimplementedIdmServiceServer
-	accountLogic logic.AccountLogic
+	accountLogic      logic.AccountLogic
+	downloadTaskLogic logic.DownloadTaskLogic
 }
 
 // CreateAccount implements idm.IdmServiceServer.
 func (h *Handler) CreateAccount(ctx context.Context, in *idm.CreateAccountRequest) (*idm.CreateAccountResponse, error) {
 	err := in.ValidateAll()
 	if err != nil {
-		return nil, responseError(err)
+		return nil, clientResponseError(err)
 	}
 
 	account, err := h.accountLogic.CreateAccount(ctx, logic.CreateAccountInput{
@@ -30,7 +35,7 @@ func (h *Handler) CreateAccount(ctx context.Context, in *idm.CreateAccountReques
 		Password:    in.Password,
 	})
 	if err != nil {
-		return nil, responseError(err)
+		return nil, clientResponseError(err)
 	}
 	return &idm.CreateAccountResponse{
 		AccountId: account.ID,
@@ -41,7 +46,7 @@ func (h *Handler) CreateAccount(ctx context.Context, in *idm.CreateAccountReques
 func (h *Handler) CreateSession(ctx context.Context, in *idm.CreateSessionRequest) (*idm.CreateSessionResponse, error) {
 	err := in.ValidateAll()
 	if err != nil {
-		return nil, responseError(err)
+		return nil, clientResponseError(err)
 	}
 
 	session, err := h.accountLogic.CreateSession(
@@ -52,7 +57,7 @@ func (h *Handler) CreateSession(ctx context.Context, in *idm.CreateSessionReques
 		},
 	)
 	if err != nil {
-		return nil, responseError(err)
+		return nil, clientResponseError(err)
 	}
 
 	return &idm.CreateSessionResponse{
@@ -66,10 +71,23 @@ func (h *Handler) CreateSession(ctx context.Context, in *idm.CreateSessionReques
 
 // CreateDownloadTask implements idm.IdmServiceServer.
 func (h *Handler) CreateDownloadTask(ctx context.Context, in *idm.CreateDownloadTaskRequest) (*idm.CreateDownloadTaskResponse, error) {
-	panic("unimplemented")
-	// When create a download task
-	// 1. Producer will send a task to kafka
-	// 2. Consumer will take that and download
+	err := in.ValidateAll()
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	out, err := h.downloadTaskLogic.CreateDownloadTask(ctx, logic.CreateDownloadTaskInput{
+		Token: in.Token,
+		Type:  in.DownloadType,
+		URL:   in.Url,
+	})
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	return &idm.CreateDownloadTaskResponse{
+		DownloadTask: &out.DownloadTask,
+	}, nil
 }
 
 // GetDownloadTaskFile implements idm.IdmServiceServer.
@@ -79,15 +97,61 @@ func (h *Handler) GetDownloadTaskFile(*idm.GetDownloadTaskFileRequest, idm.IdmSe
 
 // GetDownloadTaskList implements idm.IdmServiceServer.
 func (h *Handler) GetDownloadTaskList(ctx context.Context, in *idm.GetDownloadTaskListRequest) (*idm.GetDownloadTaskListResponse, error) {
-	panic("unimplemented")
+	err := in.ValidateAll()
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	out, err := h.downloadTaskLogic.GetDownloadTaskList(ctx, logic.GetDownloadTaskListInput{
+		Token:  in.Token,
+		Offset: in.Offset,
+		Limit:  in.Limit,
+	})
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	return &idm.GetDownloadTaskListResponse{
+		DownloadTaskList:       out.DownloadTaskList,
+		TotalDownloadTaskCount: out.TotalDownloadTaskCount,
+	}, nil
 }
 
 // UpdateDownloadTask implements idm.IdmServiceServer.
 func (h *Handler) UpdateDownloadTask(ctx context.Context, in *idm.UpdateDownloadTaskRequest) (*idm.UpdateDownloadTaskResponse, error) {
-	panic("unimplemented")
+	err := in.ValidateAll()
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	out, err := h.downloadTaskLogic.UpdateDownloadTask(ctx, logic.UpdateDownloadTaskInput{
+		Token:          in.Token,
+		DownloadTaskID: in.DownloadTaskId,
+		URL:            in.Url,
+	})
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	return &idm.UpdateDownloadTaskResponse{
+		DownloadTask: &out.DownloadTask,
+	}, nil
 }
 
 // DeleteDownloadTask implements idm.IdmServiceServer.
 func (h *Handler) DeleteDownloadTask(ctx context.Context, in *idm.DeleteDownloadTaskRequest) (*idm.DeleteDownloadTaskResponse, error) {
-	panic("unimplemented")
+	err := in.ValidateAll()
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	err = h.downloadTaskLogic.DeleteDownloadTask(ctx, logic.DeleteDownloadTaskInput{
+		Token:          in.Token,
+		DownloadTaskID: in.DownloadTaskId,
+	})
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	return &idm.DeleteDownloadTaskResponse{}, nil
 }

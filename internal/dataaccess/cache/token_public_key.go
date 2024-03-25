@@ -16,8 +16,10 @@ type TokenPublicKey interface {
 	Get(ctx context.Context, tokenPublicKeyID string) ([]byte, error)
 }
 
-func NewTokenPublicKey() (TokenPublicKey, error) {
-	return &tokenPublicKey{}, nil
+func NewTokenPublicKey(client Client) (TokenPublicKey, error) {
+	return &tokenPublicKey{
+		client: client,
+	}, nil
 }
 
 type tokenPublicKey struct {

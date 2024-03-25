@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+
+	"go.uber.org/zap"
 )
 
 type AccountPassword struct {
@@ -17,10 +19,17 @@ type AccountPasswordDataAccessor interface {
 
 type accountPasswordDataAccessor struct {
 	database Database
+	logger   *zap.Logger
 }
 
-func NewAccountPasswordDataAccessor(database Database) AccountPasswordDataAccessor {
-	return &accountPasswordDataAccessor{database: database}
+func NewAccountPasswordDataAccessor(
+	database Database,
+	logger *zap.Logger,
+) AccountPasswordDataAccessor {
+	return &accountPasswordDataAccessor{
+		database: database,
+		logger:   logger,
+	}
 }
 
 // GetPassword implements AccountPasswordDataAccessor.
@@ -52,5 +61,6 @@ func (a *accountPasswordDataAccessor) CreatePassword(ctx context.Context, ofAcco
 func (a *accountPasswordDataAccessor) WithDatabaseTransaction(database Database) AccountPasswordDataAccessor {
 	return &accountPasswordDataAccessor{
 		database: database,
+		logger:   a.logger,
 	}
 }

@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/maxuanquang/idm/internal/configs"
@@ -34,6 +35,9 @@ func (h *hashLogic) HashPassword(ctx context.Context, plainPassword string) (str
 func (h *hashLogic) IsHashEqual(ctx context.Context, plainPassword string, hashedPassword string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
 	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return false, nil
+		}
 		return false, fmt.Errorf("error comparing passwords: %w", err)
 	}
 	return true, nil

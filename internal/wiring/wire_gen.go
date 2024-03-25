@@ -13,6 +13,7 @@ import (
 	"github.com/maxuanquang/idm/internal/dataaccess"
 	"github.com/maxuanquang/idm/internal/dataaccess/cache"
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
+	"github.com/maxuanquang/idm/internal/dataaccess/mq/producer"
 	"github.com/maxuanquang/idm/internal/handler"
 	"github.com/maxuanquang/idm/internal/handler/grpc"
 	"github.com/maxuanquang/idm/internal/handler/http"
@@ -40,8 +41,8 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 		return app.Server{}, nil, err
 	}
 	accountDataAccessor := database.NewAccountDataAccessor(databaseDatabase, logger)
-	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase)
-	hash := logic.NewHashLogic()
+	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase, logger)
+	hashLogic := logic.NewHashLogic()
 	tokenPublicKeyDataAccessor, err := database.NewTokenPublicKeyDataAccessor(databaseDatabase, logger)
 	if err != nil {
 		cleanup2()
@@ -49,20 +50,20 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 		return app.Server{}, nil, err
 	}
 	auth := config.Auth
-	tokenPublicKey, err := cache.NewTokenPublicKey()
-	if err != nil {
-		cleanup2()
-		cleanup()
-		return app.Server{}, nil, err
-	}
-	token, err := logic.NewTokenLogic(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth, tokenPublicKey)
-	if err != nil {
-		cleanup2()
-		cleanup()
-		return app.Server{}, nil, err
-	}
 	configsCache := config.Cache
 	client, err := cache.NewClient(configsCache, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	tokenPublicKey, err := cache.NewTokenPublicKey(client)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	tokenLogic, err := logic.NewTokenLogic(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth, tokenPublicKey)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -74,8 +75,28 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 		cleanup()
 		return app.Server{}, nil, err
 	}
-	account := logic.NewAccountLogic(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token, takenAccountName, logger)
-	idmServiceServer := grpc.NewHandler(account)
+	accountLogic := logic.NewAccountLogic(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hashLogic, tokenLogic, takenAccountName, logger)
+	downloadTaskDataAccessor := database.NewDownloadTaskDataAccessor(databaseDatabase, logger)
+	mq := config.MQ
+	producerClient, err := producer.NewClient(mq, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	downloadTaskCreatedProducer, err := producer.NewDownloadTaskCreatedProducer(producerClient, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	downloadTaskLogic, err := logic.NewDownloadTaskLogic(tokenLogic, downloadTaskDataAccessor, downloadTaskCreatedProducer, databaseDatabase, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	idmServiceServer := grpc.NewHandler(accountLogic, downloadTaskLogic)
 	server := grpc.NewServer(configsGRPC, idmServiceServer)
 	configsHTTP := config.HTTP
 	httpServer := http.NewServer(configsHTTP, configsGRPC, logger)
