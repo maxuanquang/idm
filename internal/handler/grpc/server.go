@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/validator"
 	"github.com/maxuanquang/idm/internal/configs"
 	"github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	"google.golang.org/grpc"
@@ -34,7 +35,14 @@ func (s *server) Start(ctx context.Context) error {
 	}
 	defer listener.Close()
 
-	var opts = []grpc.ServerOption{}
+	var opts = []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(
+			validator.UnaryServerInterceptor(),
+		),
+		grpc.ChainStreamInterceptor(
+			validator.StreamServerInterceptor(),
+		),
+	}
 	server := grpc.NewServer(opts...)
 	idm.RegisterIdmServiceServer(server, s.handler)
 

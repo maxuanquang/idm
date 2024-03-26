@@ -657,8 +657,6 @@ func (m *CreateSessionResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Token
-
 	if all {
 		switch v := interface{}(m.GetAccount()).(type) {
 		case interface{ ValidateAll() error }:
@@ -789,8 +787,6 @@ func (m *CreateDownloadTaskRequest) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for Token
 
 	// no validation rules for DownloadType
 
@@ -1048,8 +1044,6 @@ func (m *GetDownloadTaskListRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Token
-
 	// no validation rules for Offset
 
 	if m.GetLimit() > 100 {
@@ -1303,8 +1297,6 @@ func (m *UpdateDownloadTaskRequest) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for Token
 
 	// no validation rules for DownloadTaskId
 
@@ -1562,8 +1554,6 @@ func (m *DeleteDownloadTaskRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Token
-
 	// no validation rules for DownloadTaskId
 
 	if len(errors) > 0 {
@@ -1769,8 +1759,6 @@ func (m *GetDownloadTaskFileRequest) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for Token
 
 	// no validation rules for DownloadTaskId
 

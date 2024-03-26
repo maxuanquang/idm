@@ -96,7 +96,8 @@ func (d *downloadTaskDataAccessor) GetDownloadTaskListOfAccount(ctx context.Cont
 func (d *downloadTaskDataAccessor) GetDownloadTaskCountOfAccount(ctx context.Context, accountID uint64) (uint64, error) {
 	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Uint64("accountID", accountID))
 
-	result := d.database.Model(&DownloadTask{}).Where("of_account_id = ?", accountID)
+	var downloadTasks []DownloadTask
+	result := d.database.Where("of_account_id = ?", accountID).Find(&downloadTasks)
 	if result.Error != nil {
 		logger.With(zap.Error(result.Error)).Error("error getting download task count")
 		return 0, result.Error

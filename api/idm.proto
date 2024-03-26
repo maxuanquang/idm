@@ -94,15 +94,11 @@ message CreateSessionRequest {
     } ];
 }
 
-message CreateSessionResponse {
-    string token = 1;
-    Account account = 2;
-}
+message CreateSessionResponse { Account account = 1; }
 
 message CreateDownloadTaskRequest {
-    string token = 1;
-    DownloadType download_type = 2;
-    string url = 3 [ (validate.rules).string = {
+    DownloadType download_type = 1;
+    string url = 2 [ (validate.rules).string = {
         uri : true,
     } ];
 }
@@ -110,9 +106,8 @@ message CreateDownloadTaskRequest {
 message CreateDownloadTaskResponse { DownloadTask download_task = 1; }
 
 message GetDownloadTaskListRequest {
-    string token = 1;
-    uint64 offset = 2;
-    uint64 limit = 3 [ (validate.rules).uint64 = {lte : 100} ];
+    uint64 offset = 1;
+    uint64 limit = 2 [ (validate.rules).uint64 = {lte : 100} ];
 }
 message GetDownloadTaskListResponse {
     repeated DownloadTask download_task_list = 1;
@@ -120,23 +115,16 @@ message GetDownloadTaskListResponse {
 }
 
 message UpdateDownloadTaskRequest {
-    string token = 1;
-    uint64 download_task_id = 2;
-    string url = 3 [ (validate.rules).string = {
+    uint64 download_task_id = 1;
+    string url = 2 [ (validate.rules).string = {
         uri : true,
     } ];
 }
 message UpdateDownloadTaskResponse { DownloadTask download_task = 1; }
 
-message DeleteDownloadTaskRequest {
-    string token = 1;
-    uint64 download_task_id = 2;
-}
+message DeleteDownloadTaskRequest { uint64 download_task_id = 1; }
 
 message DeleteDownloadTaskResponse {}
 
-message GetDownloadTaskFileRequest {
-    string token = 1;
-    uint64 download_task_id = 2;
-}
+message GetDownloadTaskFileRequest { uint64 download_task_id = 1; }
 message GetDownloadTaskFileResponse { bytes data = 1; }
