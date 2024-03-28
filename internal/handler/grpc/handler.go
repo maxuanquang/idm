@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"strings"
 
 	idm "github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	"github.com/maxuanquang/idm/internal/logic"
@@ -10,7 +11,8 @@ import (
 )
 
 const (
-	AuthTokenMetadataName = "IDM_AUTH"
+	AuthTokenMetadataName         = "IDM_AUTH"
+	GRPCGatewayCookieMetadataName = "grpcgateway-cookie"
 )
 
 func NewHandler(
@@ -30,17 +32,23 @@ type Handler struct {
 }
 
 func (h *Handler) getAuthTokenFromMetadata(ctx context.Context) string {
-	metadata, ok := metadata.FromIncomingContext(ctx)
+	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return ""
 	}
 
-	authTokenMetadataValues := metadata.Get(AuthTokenMetadataName)
-	if len(authTokenMetadataValues) == 0 {
-		return ""
+	grpcCookies := md.Get(GRPCGatewayCookieMetadataName)
+
+	var authTokenValue string
+	for _, cookie := range grpcCookies {
+		parts := strings.Split(cookie, "=")
+		if parts[0] == AuthTokenMetadataName {
+			authTokenValue = parts[1]
+			break
+		}
 	}
 
-	return authTokenMetadataValues[0]
+	return authTokenValue
 }
 
 // CreateAccount implements idm.IdmServiceServer.

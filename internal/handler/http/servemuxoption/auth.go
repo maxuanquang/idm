@@ -37,6 +37,10 @@ func WithAuthMetadataToAuthCookie(authCookieName string, authTokenMetadataName s
 			}
 
 			authTokenMetadataValues := md.HeaderMD.Get(authTokenMetadataName)
+			if len(authTokenMetadataValues) == 0 {
+				return nil
+			}
+			
 			http.SetCookie(w, &http.Cookie{
 				Name:     authCookieName,
 				Value:    authTokenMetadataValues[0],
