@@ -261,7 +261,10 @@
     "IdmServiceUpdateDownloadTaskBody": {
       "type": "object",
       "properties": {
-        "url": {
+        "downloadStatus": {
+          "$ref": "#/definitions/idmDownloadStatus"
+        },
+        "metadata": {
           "type": "string"
         }
       }

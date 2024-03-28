@@ -7,6 +7,7 @@ import (
 	"github.com/maxuanquang/idm/internal/utils"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
@@ -16,18 +17,19 @@ var (
 type DownloadTask struct {
 	DownloadTaskID uint64 `gorm:"column:download_task_id;primaryKey"`
 	OfAccountID    uint64 `gorm:"column:of_account_id"`
-	DownloadType   int16  `gorm:"column:download_type"`
+	DownloadType   uint16 `gorm:"column:download_type"`
 	DownloadURL    string `gorm:"column:download_url"`
-	DownloadStatus int16  `gorm:"column:download_status"`
+	DownloadStatus uint16 `gorm:"column:download_status"`
 	Metadata       string `gorm:"column:metadata"`
 }
 
 type DownloadTaskDataAccessor interface {
 	CreateDownloadTask(ctx context.Context, downloadTask DownloadTask) (DownloadTask, error)
 	GetDownloadTask(ctx context.Context, downloadTaskID uint64) (DownloadTask, error)
+	GetDownloadTaskForUpdate(ctx context.Context, downloadTaskID uint64) (DownloadTask, error)
 	GetDownloadTaskListOfAccount(ctx context.Context, accountID, offset, limit uint64) ([]DownloadTask, error)
 	GetDownloadTaskCountOfAccount(ctx context.Context, accountID uint64) (uint64, error)
-	UpdateDownloadTask(ctx context.Context, downloadTask DownloadTask) error
+	UpdateDownloadTask(ctx context.Context, downloadTaskID uint64, downloadStatus uint16, metadata string) error
 	DeleteDownloadTask(ctx context.Context, downloadTaskID uint64) error
 	WithDatabaseTransaction(database Database) DownloadTaskDataAccessor
 }
@@ -78,6 +80,24 @@ func (d *downloadTaskDataAccessor) GetDownloadTask(ctx context.Context, download
 	return downloadTask, nil
 }
 
+// GetDownloadTaskForUpdate implements DownloadTaskDataAccessor.
+func (d *downloadTaskDataAccessor) GetDownloadTaskForUpdate(ctx context.Context, downloadTaskID uint64) (DownloadTask, error) {
+	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Uint64("downloadTaskID", downloadTaskID))
+
+	var downloadTask DownloadTask
+	result := d.database.Clauses(clause.Locking{Strength: "UPDATE"}).Where("download_task_id = ?", downloadTaskID).First(&downloadTask)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return DownloadTask{}, ErrDownloadTaskNotFound
+		}
+
+		logger.With(zap.Error(result.Error)).Error("error getting download task")
+		return DownloadTask{}, result.Error
+	}
+
+	return downloadTask, nil
+}
+
 // GetDownloadTaskListOfAccount implements DownloadTaskDataAccessor.
 func (d *downloadTaskDataAccessor) GetDownloadTaskListOfAccount(ctx context.Context, accountID, offset, limit uint64) ([]DownloadTask, error) {
 	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Uint64("accountID", accountID)).With(zap.Uint64("offset", offset)).With(zap.Uint64("limit", limit))
@@ -107,9 +127,21 @@ func (d *downloadTaskDataAccessor) GetDownloadTaskCountOfAccount(ctx context.Con
 }
 
 // UpdateDownloadTask implements DownloadTaskDataAccessor.
-func (d *downloadTaskDataAccessor) UpdateDownloadTask(ctx context.Context, downloadTask DownloadTask) error {
-	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("downloadTask", downloadTask))
+func (d *downloadTaskDataAccessor) UpdateDownloadTask(ctx context.Context, downloadTaskID uint64, downloadStatus uint16, metadata string) error {
+	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Uint64("downloadTaskID", downloadTaskID)).With(zap.Uint16("downloadStatus", downloadStatus)).With(zap.String("metadata", metadata))
 
+	downloadTask, err := d.GetDownloadTaskForUpdate(ctx, downloadTaskID)
+	if err != nil {
+		return err
+	}
+
+	if downloadStatus != 0 {
+		downloadTask.DownloadStatus = downloadStatus
+	}
+	if metadata != "" {
+		downloadTask.Metadata = metadata
+	}
+	
 	result := d.database.Save(&downloadTask)
 	if result.Error != nil {
 		logger.With(zap.Error(result.Error)).Error("failed to update download task")

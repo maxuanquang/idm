@@ -13,8 +13,11 @@ import (
 	"github.com/maxuanquang/idm/internal/dataaccess"
 	"github.com/maxuanquang/idm/internal/dataaccess/cache"
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
+	"github.com/maxuanquang/idm/internal/dataaccess/file"
+	consumer2 "github.com/maxuanquang/idm/internal/dataaccess/mq/consumer"
 	"github.com/maxuanquang/idm/internal/dataaccess/mq/producer"
 	"github.com/maxuanquang/idm/internal/handler"
+	"github.com/maxuanquang/idm/internal/handler/consumer"
 	"github.com/maxuanquang/idm/internal/handler/grpc"
 	"github.com/maxuanquang/idm/internal/handler/http"
 	"github.com/maxuanquang/idm/internal/logic"
@@ -90,7 +93,14 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 		cleanup()
 		return app.Server{}, nil, err
 	}
-	downloadTaskLogic, err := logic.NewDownloadTaskLogic(tokenLogic, downloadTaskDataAccessor, downloadTaskCreatedProducer, databaseDatabase, logger)
+	download := config.Download
+	fileClient, err := file.NewClient(download, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	downloadTaskLogic, err := logic.NewDownloadTaskLogic(tokenLogic, downloadTaskDataAccessor, downloadTaskCreatedProducer, fileClient, databaseDatabase, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -100,7 +110,20 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 	server := grpc.NewServer(configsGRPC, idmServiceServer)
 	configsHTTP := config.HTTP
 	httpServer := http.NewServer(configsHTTP, configsGRPC, auth, logger)
-	appServer, err := app.NewServer(server, httpServer, logger)
+	downloadTaskCreatedHandler, err := consumer.NewDownloadTaskCreatedHandler(downloadTaskLogic, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	consumerConsumer, err := consumer2.NewConsumer(mq, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.Server{}, nil, err
+	}
+	rootConsumer := consumer.NewRootConsumer(downloadTaskCreatedHandler, consumerConsumer, logger)
+	appServer, err := app.NewServer(server, httpServer, rootConsumer, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()

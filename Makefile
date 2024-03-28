@@ -23,6 +23,7 @@ proto:
 	--validate_out="lang=go:./internal/generated" \
 	--openapiv2_out=./api \
 	--grpc-gateway_out ./internal/generated --grpc-gateway_opt generate_unbound_methods=true \
+	--experimental_allow_proto3_optional \
 	api/idm.proto
 
 .PHONY: wire

@@ -18,6 +18,7 @@ type Config struct {
 	HTTP     HTTP     `yaml:"http"`
 	GRPC     GRPC     `yaml:"grpc"`
 	MQ       MQ       `yaml:"mq"`
+	Download Download `yaml:"download"`
 }
 
 func NewConfig(configFilePath ConfigFilePath) (Config, error) {

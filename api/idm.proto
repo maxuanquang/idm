@@ -116,9 +116,8 @@ message GetDownloadTaskListResponse {
 
 message UpdateDownloadTaskRequest {
     uint64 download_task_id = 1;
-    string url = 2 [ (validate.rules).string = {
-        uri : true,
-    } ];
+    optional DownloadStatus download_status = 2;
+    optional string metadata = 3;
 }
 message UpdateDownloadTaskResponse { DownloadTask download_task = 1; }
 

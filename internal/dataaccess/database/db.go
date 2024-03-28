@@ -8,6 +8,7 @@ import (
 	"github.com/maxuanquang/idm/internal/configs"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
 )
 
@@ -18,6 +19,7 @@ type Database interface {
 	Attrs(attrs ...interface{}) (tx *gorm.DB)
 	AutoMigrate(dst ...interface{}) error
 	Begin(opts ...*sql.TxOptions) *gorm.DB
+	Clauses(conds ...clause.Expression) (tx *gorm.DB)
 	Commit() *gorm.DB
 	Connection(fc func(tx *gorm.DB) error) (err error)
 	Count(count *int64) (tx *gorm.DB)

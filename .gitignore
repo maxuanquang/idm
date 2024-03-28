@@ -20,5 +20,8 @@
 # vscode settings
 .vscode/
 
+# downloads
+downloads/
+
 # Go workspace file
 go.work

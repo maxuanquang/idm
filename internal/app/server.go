@@ -4,6 +4,7 @@ import (
 	"context"
 	"syscall"
 
+	"github.com/maxuanquang/idm/internal/handler/consumer"
 	"github.com/maxuanquang/idm/internal/handler/grpc"
 	"github.com/maxuanquang/idm/internal/handler/http"
 	"github.com/maxuanquang/idm/internal/utils"
@@ -13,17 +14,20 @@ import (
 type Server struct {
 	grpcServer grpc.Server
 	httpServer http.Server
+	mqConsumer consumer.RootConsumer
 	logger     *zap.Logger
 }
 
 func NewServer(
 	grpcServer grpc.Server,
 	httpServer http.Server,
+	mqConsumer consumer.RootConsumer,
 	logger *zap.Logger,
 ) (Server, error) {
 	return Server{
 		grpcServer: grpcServer,
 		httpServer: httpServer,
+		mqConsumer: mqConsumer,
 		logger:     logger,
 	}, nil
 }
@@ -38,6 +42,11 @@ func (s *Server) Start() {
 	go func() {
 		err := s.httpServer.Start(context.Background())
 		s.logger.With(zap.Error(err)).Error("can not start HTTP Server")
+	}()
+
+	go func() {
+		err := s.mqConsumer.Start(context.Background())
+		s.logger.With(zap.Error(err)).Error("can not start message queue consumer")
 	}()
 
 	utils.WaitForSignals(syscall.SIGINT, syscall.SIGTERM)

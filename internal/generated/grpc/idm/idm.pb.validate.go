@@ -1300,25 +1300,12 @@ func (m *UpdateDownloadTaskRequest) validate(all bool) error {
 
 	// no validation rules for DownloadTaskId
 
-	if uri, err := url.Parse(m.GetUrl()); err != nil {
-		err = UpdateDownloadTaskRequestValidationError{
-			field:  "Url",
-			reason: "value must be a valid URI",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	} else if !uri.IsAbs() {
-		err := UpdateDownloadTaskRequestValidationError{
-			field:  "Url",
-			reason: "value must be absolute",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+	if m.DownloadStatus != nil {
+		// no validation rules for DownloadStatus
+	}
+
+	if m.Metadata != nil {
+		// no validation rules for Metadata
 	}
 
 	if len(errors) > 0 {

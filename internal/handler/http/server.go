@@ -47,7 +47,7 @@ type server struct {
 
 func (s *server) Start(ctx context.Context) error {
 	mux := runtime.NewServeMux(
-		// servemuxoption.WithAuthCookieToAuthMetadata(AuthCookieName, grpcHandler.AuthTokenMetadataName),
+		servemuxoption.WithAuthCookieToAuthMetadata(AuthCookieName, grpcHandler.AuthTokenMetadataName),
 		servemuxoption.WithAuthMetadataToAuthCookie(AuthCookieName, grpcHandler.AuthTokenMetadataName, s.authConfig.Token.GetTokenDuration()),
 	)
 

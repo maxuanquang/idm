@@ -2,8 +2,11 @@ package logic
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
+	"github.com/maxuanquang/idm/internal/dataaccess/file"
 	"github.com/maxuanquang/idm/internal/dataaccess/mq/producer"
 	"github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	"github.com/maxuanquang/idm/internal/utils"
@@ -37,7 +40,8 @@ type GetDownloadTaskListOutput struct {
 type UpdateDownloadTaskInput struct {
 	Token          string
 	DownloadTaskID uint64
-	URL            string
+	DownloadStatus uint16
+	Metadata       string
 }
 
 type UpdateDownloadTaskOutput struct {
@@ -49,17 +53,25 @@ type DeleteDownloadTaskInput struct {
 	DownloadTaskID uint64
 }
 
+type ExecuteDownloadTaskInput struct {
+	DownloadTaskID uint64
+}
+
 type DownloadTaskLogic interface {
 	CreateDownloadTask(ctx context.Context, in CreateDownloadTaskInput) (CreateDownloadTaskOutput, error)
 	GetDownloadTaskList(ctx context.Context, in GetDownloadTaskListInput) (GetDownloadTaskListOutput, error)
 	UpdateDownloadTask(ctx context.Context, in UpdateDownloadTaskInput) (UpdateDownloadTaskOutput, error)
 	DeleteDownloadTask(ctx context.Context, in DeleteDownloadTaskInput) error
+
+	ExecuteDownloadTask(ctx context.Context, in ExecuteDownloadTaskInput) error
 }
 
+// TODO: Add permission for functions
 func NewDownloadTaskLogic(
 	tokenLogic TokenLogic,
 	downloadTaskDataAccessor database.DownloadTaskDataAccessor,
 	downloadTaskCreatedProducer producer.DownloadTaskCreatedProducer,
+	fileClient file.Client,
 	database database.Database,
 	logger *zap.Logger,
 ) (DownloadTaskLogic, error) {
@@ -67,6 +79,7 @@ func NewDownloadTaskLogic(
 		tokenLogic:                  tokenLogic,
 		downloadTaskDataAccessor:    downloadTaskDataAccessor,
 		downloadTaskCreatedProducer: downloadTaskCreatedProducer,
+		fileClient:                  fileClient,
 		database:                    database,
 		logger:                      logger,
 	}, nil
@@ -76,6 +89,7 @@ type downloadTaskLogic struct {
 	tokenLogic                  TokenLogic
 	downloadTaskDataAccessor    database.DownloadTaskDataAccessor
 	downloadTaskCreatedProducer producer.DownloadTaskCreatedProducer
+	fileClient                  file.Client
 	database                    database.Database
 	logger                      *zap.Logger
 }
@@ -96,9 +110,9 @@ func (d *downloadTaskLogic) CreateDownloadTask(ctx context.Context, in CreateDow
 
 		createdDownloadTask, err = d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).CreateDownloadTask(ctx, database.DownloadTask{
 			OfAccountID:    accountID,
-			DownloadType:   int16(in.Type),
+			DownloadType:   uint16(in.Type),
 			DownloadURL:    in.URL,
-			DownloadStatus: int16(idm.DownloadStatus_Pending),
+			DownloadStatus: uint16(idm.DownloadStatus_Pending),
 			Metadata:       "{}",
 		})
 		if err != nil {
@@ -106,9 +120,7 @@ func (d *downloadTaskLogic) CreateDownloadTask(ctx context.Context, in CreateDow
 			return err
 		}
 
-		err = d.downloadTaskCreatedProducer.Produce(ctx, producer.DownloadTask{
-			DownloadTask: createdDownloadTask,
-		})
+		err = d.downloadTaskCreatedProducer.Produce(ctx, createdDownloadTask.DownloadTaskID)
 		if err != nil {
 			logger.With(zap.Error(err)).Error("failed to produce message download task created")
 			return err
@@ -189,20 +201,17 @@ func (d *downloadTaskLogic) UpdateDownloadTask(ctx context.Context, in UpdateDow
 	// Implement the logic to update the download task based on the input parameters
 	var updatedTask database.DownloadTask
 	txErr := d.database.Transaction(func(tx *gorm.DB) error {
-		downloadTask, err := d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).GetDownloadTask(ctx, in.DownloadTaskID)
-		if err != nil {
-			logger.With(zap.Error(err)).Error("failed to get download task")
-			return err
-		}
-
-		downloadTask.DownloadURL = in.URL
-		err = d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).UpdateDownloadTask(ctx, downloadTask)
+		err = d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).UpdateDownloadTask(ctx, in.DownloadTaskID, in.DownloadStatus, in.Metadata)
 		if err != nil {
 			logger.With(zap.Error(err)).Error("failed to update download task")
 			return err
 		}
 
-		updatedTask = downloadTask
+		updatedTask, err = d.downloadTaskDataAccessor.GetDownloadTaskForUpdate(ctx, in.DownloadTaskID)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if txErr != nil {
@@ -240,4 +249,102 @@ func (d *downloadTaskLogic) DeleteDownloadTask(ctx context.Context, in DeleteDow
 	}
 
 	return nil
+}
+
+// ExecuteDownloadTask implements DownloadTaskLogic.
+func (d *downloadTaskLogic) ExecuteDownloadTask(ctx context.Context, in ExecuteDownloadTaskInput) error {
+	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("execute_download_task_input", in))
+
+	// 1. Find download task in database
+	// 2. Check if it exists
+	// 3. Check if it is in PENDING state
+	// 4. If (2 and 3), change it to DOWNLOADING state
+	// 5. Download it (HOW?????)
+	// 6. If download failed, change it state to FAILED and return error
+	// 7. If download succeeded, change it state to DOWNLOADED and return nil
+	downloadTask, err := d.updateDownloadTaskStatusFromPendingToDownloading(ctx, in.DownloadTaskID)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("can not update task status from pending to downloading")
+		return err
+	}
+
+	// Create downloader
+	var downloader Downloader
+
+	switch downloadTask.DownloadType {
+	case uint16(idm.DownloadType_HTTP):
+		downloader, err = NewHTTPDownloader(downloadTask.DownloadURL, d.logger)
+		if err != nil {
+			logger.With(zap.Error(err)).Error("can not create http downloader")
+			return err
+		}
+	default:
+		logger.With(zap.Error(err)).Error("download type not supported")
+		return err
+	}
+
+	fileName := fmt.Sprintf("%d", downloadTask.DownloadTaskID)
+	fileWriteCloser, err := d.fileClient.Write(ctx, fileName)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("can not create file writer")
+		return err
+	}
+	defer fileWriteCloser.Close()
+
+	metadata, err := downloader.Download(ctx, fileWriteCloser)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("filed to download file")
+		return err
+	}
+
+	// update
+	metadata["file-name"] = fileName
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("can not marshal metadata")
+		return err
+	}
+	err = d.downloadTaskDataAccessor.UpdateDownloadTask(ctx, downloadTask.DownloadTaskID, uint16(idm.DownloadStatus_Success), string(jsonMetadata))
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to update download task status to success")
+		return err
+	}
+
+	logger.Info("download task executed successfully")
+
+	return nil
+}
+
+func (d *downloadTaskLogic) updateDownloadTaskStatusFromPendingToDownloading(ctx context.Context, downloadTaskID uint64) (database.DownloadTask, error) {
+
+	var (
+		downloadTask database.DownloadTask
+		txErr        error
+		err          error
+	)
+
+	txErr = d.database.Transaction(func(tx *gorm.DB) error {
+		downloadTask, err = d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).GetDownloadTaskForUpdate(ctx, downloadTaskID)
+		if err != nil {
+			d.logger.With(zap.Error(err)).Error("failed to get download task")
+			return err
+		}
+
+		if downloadTask.DownloadStatus != uint16(idm.DownloadStatus_Pending) {
+			d.logger.Error("download task not in pending status to download")
+			return fmt.Errorf("download task not in pending status to download")
+		}
+
+		err = d.downloadTaskDataAccessor.WithDatabaseTransaction(tx).UpdateDownloadTask(ctx, downloadTaskID, uint16(idm.DownloadStatus_Downloading), "")
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if txErr != nil {
+		return database.DownloadTask{}, txErr
+	}
+
+	return downloadTask, nil
 }

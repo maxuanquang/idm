@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	"strings"
+	// "strings"
 
 	idm "github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	"github.com/maxuanquang/idm/internal/logic"
@@ -37,18 +37,12 @@ func (h *Handler) getAuthTokenFromMetadata(ctx context.Context) string {
 		return ""
 	}
 
-	grpcCookies := md.Get(GRPCGatewayCookieMetadataName)
-
-	var authTokenValue string
-	for _, cookie := range grpcCookies {
-		parts := strings.Split(cookie, "=")
-		if parts[0] == AuthTokenMetadataName {
-			authTokenValue = parts[1]
-			break
-		}
+	authTokenValues := md.Get(AuthTokenMetadataName)
+	if len(authTokenValues) == 0 {
+		return ""
 	}
 
-	return authTokenValue
+	return authTokenValues[0]
 }
 
 // CreateAccount implements idm.IdmServiceServer.
@@ -131,10 +125,23 @@ func (h *Handler) GetDownloadTaskList(ctx context.Context, in *idm.GetDownloadTa
 
 // UpdateDownloadTask implements idm.IdmServiceServer.
 func (h *Handler) UpdateDownloadTask(ctx context.Context, in *idm.UpdateDownloadTaskRequest) (*idm.UpdateDownloadTaskResponse, error) {
+	var (
+		downloadStatus uint16 = 0
+		metadata       string = ""
+	)
+
+	if in.DownloadStatus != nil {
+		downloadStatus = uint16(*in.DownloadStatus)
+	}
+	if in.Metadata != nil {
+		metadata = *in.Metadata
+	}
+
 	out, err := h.downloadTaskLogic.UpdateDownloadTask(ctx, logic.UpdateDownloadTaskInput{
 		Token:          h.getAuthTokenFromMetadata(ctx),
 		DownloadTaskID: in.DownloadTaskId,
-		URL:            in.Url,
+		DownloadStatus: downloadStatus,
+		Metadata:       metadata,
 	})
 	if err != nil {
 		return nil, clientResponseError(err)

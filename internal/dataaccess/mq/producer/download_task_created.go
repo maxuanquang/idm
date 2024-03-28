@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/maxuanquang/idm/internal/dataaccess/database"
+	// "github.com/maxuanquang/idm/internal/dataaccess/database"
 	"github.com/maxuanquang/idm/internal/utils"
 	"go.uber.org/zap"
 )
@@ -14,7 +14,7 @@ const (
 )
 
 type DownloadTaskCreatedProducer interface {
-	Produce(ctx context.Context, event DownloadTask) error
+	Produce(ctx context.Context, downloadTaskID uint64) error
 }
 
 func NewDownloadTaskCreatedProducer(client Client, logger *zap.Logger) (DownloadTaskCreatedProducer, error) {
@@ -24,20 +24,16 @@ func NewDownloadTaskCreatedProducer(client Client, logger *zap.Logger) (Download
 	}, nil
 }
 
-type DownloadTask struct {
-	DownloadTask database.DownloadTask
-}
-
 type downloadTaskCreatedProducer struct {
 	client Client
 	logger *zap.Logger
 }
 
 // Produce implements DownloadTaskCreatedProducer.
-func (d *downloadTaskCreatedProducer) Produce(ctx context.Context, event DownloadTask) error {
-	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("event", event))
+func (d *downloadTaskCreatedProducer) Produce(ctx context.Context, downloadTaskID uint64) error {
+	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("download_task_id", downloadTaskID))
 
-	payload, err := json.Marshal(event)
+	payload, err := json.Marshal(downloadTaskID)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to marshal event download task created")
 		return err

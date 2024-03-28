@@ -26,3 +26,10 @@ http:
 mq:
   addresses: ["0.0.0.0:9092"]
   client_id: "1"
+download:
+  mode: "local"
+  download_directory: "./downloads/"
+  bucket: ""
+  address: ""
+  username: ""
+  password: ""

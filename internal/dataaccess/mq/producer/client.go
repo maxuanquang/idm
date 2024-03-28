@@ -46,6 +46,7 @@ func (c *client) Produce(ctx context.Context, queueName string, payload []byte) 
 		return err
 	}
 
+	logger.Info("payload sent to broker")
 	return nil
 }
 
