@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.4
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20240125205218-1f4bbc51befe
 	google.golang.org/grpc v1.62.1
@@ -20,7 +21,6 @@ require (
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
@@ -49,7 +49,6 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.17.0
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/wire v0.6.0
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/spf13/cobra v1.8.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.21.0

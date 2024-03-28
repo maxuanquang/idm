@@ -66,7 +66,6 @@ type DownloadTaskLogic interface {
 	ExecuteDownloadTask(ctx context.Context, in ExecuteDownloadTaskInput) error
 }
 
-// TODO: Add permission for functions
 func NewDownloadTaskLogic(
 	tokenLogic TokenLogic,
 	downloadTaskDataAccessor database.DownloadTaskDataAccessor,
@@ -192,10 +191,20 @@ func (d *downloadTaskLogic) GetDownloadTaskList(ctx context.Context, in GetDownl
 func (d *downloadTaskLogic) UpdateDownloadTask(ctx context.Context, in UpdateDownloadTaskInput) (UpdateDownloadTaskOutput, error) {
 	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("update_download_task_input", in))
 
-	_, _, err := d.tokenLogic.GetAccountIDAndExpireTime(ctx, in.Token)
+	accountID, _, err := d.tokenLogic.GetAccountIDAndExpireTime(ctx, in.Token)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account id and expire time from token")
 		return UpdateDownloadTaskOutput{}, status.Error(codes.Unauthenticated, "authentication token is invalid")
+	}
+
+	downloadTask, err := d.downloadTaskDataAccessor.GetDownloadTask(ctx, in.DownloadTaskID)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get download task from database")
+		return UpdateDownloadTaskOutput{}, status.Error(codes.NotFound, "download task not found")
+	}
+
+	if accountID != downloadTask.OfAccountID {
+		return UpdateDownloadTaskOutput{}, status.Error(codes.PermissionDenied, "user do not have permission to update download task")
 	}
 
 	// Implement the logic to update the download task based on the input parameters
@@ -236,10 +245,20 @@ func (d *downloadTaskLogic) UpdateDownloadTask(ctx context.Context, in UpdateDow
 func (d *downloadTaskLogic) DeleteDownloadTask(ctx context.Context, in DeleteDownloadTaskInput) error {
 	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("delete_download_task_input", in))
 
-	_, _, err := d.tokenLogic.GetAccountIDAndExpireTime(ctx, in.Token)
+	accountID, _, err := d.tokenLogic.GetAccountIDAndExpireTime(ctx, in.Token)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account id and expire time from token")
 		return status.Error(codes.Unauthenticated, "authentication token is invalid")
+	}
+
+	downloadTask, err := d.downloadTaskDataAccessor.GetDownloadTask(ctx, in.DownloadTaskID)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get download task from database")
+		return status.Error(codes.NotFound, "download task not found")
+	}
+
+	if accountID != downloadTask.OfAccountID {
+		return status.Error(codes.PermissionDenied, "user do not have permission to delete download task")
 	}
 
 	err = d.downloadTaskDataAccessor.DeleteDownloadTask(ctx, in.DownloadTaskID)
@@ -255,13 +274,6 @@ func (d *downloadTaskLogic) DeleteDownloadTask(ctx context.Context, in DeleteDow
 func (d *downloadTaskLogic) ExecuteDownloadTask(ctx context.Context, in ExecuteDownloadTaskInput) error {
 	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("execute_download_task_input", in))
 
-	// 1. Find download task in database
-	// 2. Check if it exists
-	// 3. Check if it is in PENDING state
-	// 4. If (2 and 3), change it to DOWNLOADING state
-	// 5. Download it (HOW?????)
-	// 6. If download failed, change it state to FAILED and return error
-	// 7. If download succeeded, change it state to DOWNLOADED and return nil
 	downloadTask, err := d.updateDownloadTaskStatusFromPendingToDownloading(ctx, in.DownloadTaskID)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("can not update task status from pending to downloading")
