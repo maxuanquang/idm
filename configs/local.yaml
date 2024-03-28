@@ -27,9 +27,9 @@ mq:
   addresses: ["0.0.0.0:9092"]
   client_id: "1"
 download:
-  mode: "local"
+  mode: "s3"
   download_directory: "./downloads/"
-  bucket: ""
-  address: ""
-  username: ""
-  password: ""
+  bucket: "idm"
+  address: "0.0.0.0:9000"
+  username: "root"
+  password: "secret123"
