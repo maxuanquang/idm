@@ -68,6 +68,7 @@ type DownloadTaskLogic interface {
 
 func NewDownloadTaskLogic(
 	tokenLogic TokenLogic,
+	accountDataAccessor database.AccountDataAccessor,
 	downloadTaskDataAccessor database.DownloadTaskDataAccessor,
 	downloadTaskCreatedProducer producer.DownloadTaskCreatedProducer,
 	fileClient file.Client,
@@ -76,6 +77,7 @@ func NewDownloadTaskLogic(
 ) (DownloadTaskLogic, error) {
 	return &downloadTaskLogic{
 		tokenLogic:                  tokenLogic,
+		accountDataAccessor:         accountDataAccessor,
 		downloadTaskDataAccessor:    downloadTaskDataAccessor,
 		downloadTaskCreatedProducer: downloadTaskCreatedProducer,
 		fileClient:                  fileClient,
@@ -86,6 +88,7 @@ func NewDownloadTaskLogic(
 
 type downloadTaskLogic struct {
 	tokenLogic                  TokenLogic
+	accountDataAccessor         database.AccountDataAccessor
 	downloadTaskDataAccessor    database.DownloadTaskDataAccessor
 	downloadTaskCreatedProducer producer.DownloadTaskCreatedProducer
 	fileClient                  file.Client
@@ -101,6 +104,12 @@ func (d *downloadTaskLogic) CreateDownloadTask(ctx context.Context, in CreateDow
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account id and expire time from token")
 		return CreateDownloadTaskOutput{}, status.Error(codes.Unauthenticated, "authentication token is invalid")
+	}
+
+	account, err := d.accountDataAccessor.GetAccountByID(ctx, accountID)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get account from database")
+		return CreateDownloadTaskOutput{}, status.Error(codes.NotFound, "account not found")
 	}
 
 	var createdDownloadTask database.DownloadTask
@@ -133,8 +142,11 @@ func (d *downloadTaskLogic) CreateDownloadTask(ctx context.Context, in CreateDow
 
 	return CreateDownloadTaskOutput{
 		DownloadTask: idm.DownloadTask{
-			Id:             createdDownloadTask.DownloadTaskID,
-			OfAccount:      nil,
+			Id: createdDownloadTask.DownloadTaskID,
+			OfAccount: &idm.Account{
+				Id:          account.AccountID,
+				AccountName: account.AccountName,
+			},
 			DownloadType:   idm.DownloadType(createdDownloadTask.DownloadType),
 			Url:            createdDownloadTask.DownloadURL,
 			DownloadStatus: idm.DownloadStatus(createdDownloadTask.DownloadStatus),
@@ -151,6 +163,12 @@ func (d *downloadTaskLogic) GetDownloadTaskList(ctx context.Context, in GetDownl
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account id and expire time from token")
 		return GetDownloadTaskListOutput{}, status.Error(codes.Unauthenticated, "authentication token is invalid")
+	}
+
+	account, err := d.accountDataAccessor.GetAccountByID(ctx, accountID)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get account from database")
+		return GetDownloadTaskListOutput{}, status.Error(codes.NotFound, "account not found")
 	}
 
 	// Get the list of download tasks for the account from the data accessor.
@@ -171,8 +189,11 @@ func (d *downloadTaskLogic) GetDownloadTaskList(ctx context.Context, in GetDownl
 	var outTaskList []*idm.DownloadTask
 	for _, task := range downloadTasks {
 		outTaskList = append(outTaskList, &idm.DownloadTask{
-			Id:             task.DownloadTaskID,
-			OfAccount:      nil,
+			Id: task.DownloadTaskID,
+			OfAccount: &idm.Account{
+				Id:          account.AccountID,
+				AccountName: account.AccountName,
+			},
 			DownloadType:   idm.DownloadType(task.DownloadType),
 			Url:            task.DownloadURL,
 			DownloadStatus: idm.DownloadStatus(task.DownloadStatus),
@@ -195,6 +216,12 @@ func (d *downloadTaskLogic) UpdateDownloadTask(ctx context.Context, in UpdateDow
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account id and expire time from token")
 		return UpdateDownloadTaskOutput{}, status.Error(codes.Unauthenticated, "authentication token is invalid")
+	}
+
+	account, err := d.accountDataAccessor.GetAccountByID(ctx, accountID)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get account from database")
+		return UpdateDownloadTaskOutput{}, status.Error(codes.NotFound, "account not found")
 	}
 
 	downloadTask, err := d.downloadTaskDataAccessor.GetDownloadTask(ctx, in.DownloadTaskID)
@@ -231,8 +258,11 @@ func (d *downloadTaskLogic) UpdateDownloadTask(ctx context.Context, in UpdateDow
 	// Return the updated download task in the output.
 	return UpdateDownloadTaskOutput{
 		DownloadTask: idm.DownloadTask{
-			Id:             updatedTask.DownloadTaskID,
-			OfAccount:      nil,
+			Id: updatedTask.DownloadTaskID,
+			OfAccount: &idm.Account{
+				Id:          account.AccountID,
+				AccountName: account.AccountName,
+			},
 			DownloadType:   idm.DownloadType(updatedTask.DownloadType),
 			Url:            updatedTask.DownloadURL,
 			DownloadStatus: idm.DownloadStatus(updatedTask.DownloadStatus),

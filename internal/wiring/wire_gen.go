@@ -100,7 +100,7 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 		cleanup()
 		return app.Server{}, nil, err
 	}
-	downloadTaskLogic, err := logic.NewDownloadTaskLogic(tokenLogic, downloadTaskDataAccessor, downloadTaskCreatedProducer, fileClient, databaseDatabase, logger)
+	downloadTaskLogic, err := logic.NewDownloadTaskLogic(tokenLogic, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, fileClient, databaseDatabase, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
