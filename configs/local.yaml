@@ -2,7 +2,7 @@ auth:
   hash:
     cost: 32
   token:
-    duration: 900 # in seconds
+    duration: 86400 # in seconds
     rs512_key_pair_bit_size: 2048
 database:
   type: "mysql"

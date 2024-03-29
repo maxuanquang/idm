@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	IdmService_CreateAccount_FullMethodName       = "/idm.IdmService/CreateAccount"
 	IdmService_CreateSession_FullMethodName       = "/idm.IdmService/CreateSession"
+	IdmService_DeleteSession_FullMethodName       = "/idm.IdmService/DeleteSession"
 	IdmService_CreateDownloadTask_FullMethodName  = "/idm.IdmService/CreateDownloadTask"
 	IdmService_GetDownloadTaskList_FullMethodName = "/idm.IdmService/GetDownloadTaskList"
 	IdmService_UpdateDownloadTask_FullMethodName  = "/idm.IdmService/UpdateDownloadTask"
@@ -34,6 +35,7 @@ const (
 type IdmServiceClient interface {
 	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error)
 	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error)
+	DeleteSession(ctx context.Context, in *DeleteSessionRequest, opts ...grpc.CallOption) (*DeleteSessionResponse, error)
 	CreateDownloadTask(ctx context.Context, in *CreateDownloadTaskRequest, opts ...grpc.CallOption) (*CreateDownloadTaskResponse, error)
 	GetDownloadTaskList(ctx context.Context, in *GetDownloadTaskListRequest, opts ...grpc.CallOption) (*GetDownloadTaskListResponse, error)
 	UpdateDownloadTask(ctx context.Context, in *UpdateDownloadTaskRequest, opts ...grpc.CallOption) (*UpdateDownloadTaskResponse, error)
@@ -61,6 +63,15 @@ func (c *idmServiceClient) CreateAccount(ctx context.Context, in *CreateAccountR
 func (c *idmServiceClient) CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error) {
 	out := new(CreateSessionResponse)
 	err := c.cc.Invoke(ctx, IdmService_CreateSession_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *idmServiceClient) DeleteSession(ctx context.Context, in *DeleteSessionRequest, opts ...grpc.CallOption) (*DeleteSessionResponse, error) {
+	out := new(DeleteSessionResponse)
+	err := c.cc.Invoke(ctx, IdmService_DeleteSession_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +152,7 @@ func (x *idmServiceGetDownloadTaskFileClient) Recv() (*GetDownloadTaskFileRespon
 type IdmServiceServer interface {
 	CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error)
 	CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error)
+	DeleteSession(context.Context, *DeleteSessionRequest) (*DeleteSessionResponse, error)
 	CreateDownloadTask(context.Context, *CreateDownloadTaskRequest) (*CreateDownloadTaskResponse, error)
 	GetDownloadTaskList(context.Context, *GetDownloadTaskListRequest) (*GetDownloadTaskListResponse, error)
 	UpdateDownloadTask(context.Context, *UpdateDownloadTaskRequest) (*UpdateDownloadTaskResponse, error)
@@ -158,6 +170,9 @@ func (UnimplementedIdmServiceServer) CreateAccount(context.Context, *CreateAccou
 }
 func (UnimplementedIdmServiceServer) CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSession not implemented")
+}
+func (UnimplementedIdmServiceServer) DeleteSession(context.Context, *DeleteSessionRequest) (*DeleteSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSession not implemented")
 }
 func (UnimplementedIdmServiceServer) CreateDownloadTask(context.Context, *CreateDownloadTaskRequest) (*CreateDownloadTaskResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDownloadTask not implemented")
@@ -219,6 +234,24 @@ func _IdmService_CreateSession_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(IdmServiceServer).CreateSession(ctx, req.(*CreateSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IdmService_DeleteSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdmServiceServer).DeleteSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdmService_DeleteSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdmServiceServer).DeleteSession(ctx, req.(*DeleteSessionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -330,6 +363,10 @@ var IdmService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateSession",
 			Handler:    _IdmService_CreateSession_Handler,
+		},
+		{
+			MethodName: "DeleteSession",
+			Handler:    _IdmService_DeleteSession_Handler,
 		},
 		{
 			MethodName: "CreateDownloadTask",

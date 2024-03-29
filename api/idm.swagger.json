@@ -49,6 +49,26 @@
       }
     },
     "/v1/sessions": {
+      "delete": {
+        "operationId": "IdmService_DeleteSession",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/idmDeleteSessionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "IdmService"
+        ]
+      },
       "post": {
         "operationId": "IdmService_CreateSession",
         "responses": {
@@ -340,6 +360,9 @@
       }
     },
     "idmDeleteDownloadTaskResponse": {
+      "type": "object"
+    },
+    "idmDeleteSessionResponse": {
       "type": "object"
     },
     "idmDownloadStatus": {

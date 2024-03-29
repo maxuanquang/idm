@@ -85,6 +85,26 @@ func (h *Handler) CreateSession(ctx context.Context, in *idm.CreateSessionReques
 	}, nil
 }
 
+// DeleteSession implements idm.IdmServiceServer.
+func (h *Handler) DeleteSession(ctx context.Context, in *idm.DeleteSessionRequest) (*idm.DeleteSessionResponse, error) {
+	err := h.accountLogic.DeleteSession(
+		ctx,
+		logic.DeleteSessionInput{
+			Token: h.getAuthTokenFromMetadata(ctx),
+		},
+	)
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	err = grpc.SendHeader(ctx, metadata.Pairs(AuthTokenMetadataName, ""))
+	if err != nil {
+		return nil, clientResponseError(err)
+	}
+
+	return &idm.DeleteSessionResponse{}, nil
+}
+
 // CreateDownloadTask implements idm.IdmServiceServer.
 func (h *Handler) CreateDownloadTask(ctx context.Context, in *idm.CreateDownloadTaskRequest) (*idm.CreateDownloadTaskResponse, error) {
 	out, err := h.downloadTaskLogic.CreateDownloadTask(ctx, logic.CreateDownloadTaskInput{

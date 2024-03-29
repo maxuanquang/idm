@@ -18,6 +18,11 @@ service IdmService {
             body : "*"
         };
     }
+    rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse) {
+        option (google.api.http) = {
+            delete : "/v1/sessions",
+        };
+    }
     rpc CreateDownloadTask(CreateDownloadTaskRequest) returns (CreateDownloadTaskResponse) {
         option (google.api.http) = {
             post : "/v1/tasks",
@@ -95,6 +100,10 @@ message CreateSessionRequest {
 }
 
 message CreateSessionResponse { Account account = 1; }
+
+message DeleteSessionRequest {}
+
+message DeleteSessionResponse {}
 
 message CreateDownloadTaskRequest {
     DownloadType download_type = 1;

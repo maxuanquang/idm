@@ -37,9 +37,18 @@ type CreateSessionOutput struct {
 	AccountName string
 }
 
+type DeleteSessionInput struct {
+	Token string
+}
+
+type DeleteSessionOutput struct {
+	ExpiredToken string
+}
+
 type AccountLogic interface {
 	CreateAccount(ctx context.Context, in CreateAccountInput) (CreateAccountOutput, error)
 	CreateSession(ctx context.Context, in CreateSessionInput) (CreateSessionOutput, error)
+	DeleteSession(ctx context.Context, in DeleteSessionInput) error
 }
 
 func NewAccountLogic(
@@ -167,6 +176,19 @@ func (a *accountLogic) CreateSession(ctx context.Context, in CreateSessionInput)
 		AccountID:   foundAccount.AccountID,
 		AccountName: foundAccount.AccountName,
 	}, nil
+}
+
+// DeleteSession implements AccountLogic.
+func (a *accountLogic) DeleteSession(ctx context.Context, in DeleteSessionInput) error {
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.Any("delete_session_input", in))
+
+	_, _, err := a.tokenLogic.GetAccountIDAndExpireTime(ctx, in.Token)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to find account from token")
+		return status.Error(codes.NotFound, "account not found")
+	}
+
+	return nil
 }
 
 func (a *accountLogic) isAccountNameTaken(ctx context.Context, accountName string) (bool, error) {
