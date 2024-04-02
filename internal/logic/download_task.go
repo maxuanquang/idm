@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
 	"github.com/maxuanquang/idm/internal/dataaccess/file"
@@ -14,6 +15,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
+)
+
+const (
+	DownloadTaskMetadataKeyFileName = "file-name"
+)
+
+var (
+	ErrPermissionDenied         = status.Error(codes.PermissionDenied, "permission denied")
+	ErrDownloadTaskNotCompleted = status.Error(codes.FailedPrecondition, "download task not completed")
 )
 
 type CreateDownloadTaskInput struct {
@@ -57,6 +67,15 @@ type ExecuteDownloadTaskInput struct {
 	DownloadTaskID uint64
 }
 
+type GetDownloadTaskFileInput struct {
+	Token          string
+	DownloadTaskID uint64
+}
+
+type GetDownloadTaskFileOutput struct {
+	Reader io.ReadCloser
+}
+
 type DownloadTaskLogic interface {
 	CreateDownloadTask(ctx context.Context, in CreateDownloadTaskInput) (CreateDownloadTaskOutput, error)
 	GetDownloadTaskList(ctx context.Context, in GetDownloadTaskListInput) (GetDownloadTaskListOutput, error)
@@ -64,6 +83,8 @@ type DownloadTaskLogic interface {
 	DeleteDownloadTask(ctx context.Context, in DeleteDownloadTaskInput) error
 
 	ExecuteDownloadTask(ctx context.Context, in ExecuteDownloadTaskInput) error
+
+	GetDownloadTaskFile(ctx context.Context, in GetDownloadTaskFileInput) (GetDownloadTaskFileOutput, error)
 }
 
 func NewDownloadTaskLogic(
@@ -339,8 +360,8 @@ func (d *downloadTaskLogic) ExecuteDownloadTask(ctx context.Context, in ExecuteD
 		return err
 	}
 
-	// update
-	metadata["file-name"] = fileName
+	// Update donwloadTask in database
+	metadata[DownloadTaskMetadataKeyFileName] = fileName
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("can not marshal metadata")
@@ -389,4 +410,50 @@ func (d *downloadTaskLogic) updateDownloadTaskStatusFromPendingToDownloading(ctx
 	}
 
 	return downloadTask, nil
+}
+
+// GetDownloadTaskFile implements DownloadTaskLogic.
+func (d *downloadTaskLogic) GetDownloadTaskFile(ctx context.Context, in GetDownloadTaskFileInput) (GetDownloadTaskFileOutput, error) {
+	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("get_download_task_file_input", in))
+
+	accountID, _, err := d.tokenLogic.GetAccountIDAndExpireTime(ctx, in.Token)
+	if err != nil {
+		return GetDownloadTaskFileOutput{}, err
+	}
+
+	downloadTask, err := d.downloadTaskDataAccessor.GetDownloadTask(ctx, in.DownloadTaskID)
+	if err != nil {
+		return GetDownloadTaskFileOutput{}, err
+	}
+
+	if accountID != downloadTask.OfAccountID {
+		return GetDownloadTaskFileOutput{}, ErrPermissionDenied
+	}
+
+	if downloadTask.DownloadStatus != uint16(idm.DownloadStatus_Success) {
+		return GetDownloadTaskFileOutput{}, ErrDownloadTaskNotCompleted
+	}
+
+	var downloadTaskMetadata map[string]any
+	err = json.Unmarshal([]byte(downloadTask.Metadata), &downloadTaskMetadata)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to unmarshal metadata")
+		return GetDownloadTaskFileOutput{}, err
+	}
+
+	fileName, ok := downloadTaskMetadata[DownloadTaskMetadataKeyFileName]
+	if !ok {
+		logger.Error("file name not found in metadata")
+		return GetDownloadTaskFileOutput{}, ErrDownloadTaskNotCompleted
+	}
+
+	readCloser, err := d.fileClient.Read(ctx, fileName.(string))
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to read file")
+		return GetDownloadTaskFileOutput{}, err
+	}
+
+	return GetDownloadTaskFileOutput{
+		Reader: readCloser,
+	}, nil
 }

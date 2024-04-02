@@ -2,8 +2,12 @@ package grpc
 
 import (
 	"context"
+	"errors"
+	"io"
+
 	// "strings"
 
+	"github.com/maxuanquang/idm/internal/configs"
 	idm "github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	"github.com/maxuanquang/idm/internal/logic"
 	"google.golang.org/grpc"
@@ -18,17 +22,20 @@ const (
 func NewHandler(
 	accountLogic logic.AccountLogic,
 	downloadTaskLogic logic.DownloadTaskLogic,
+	grpcConfig configs.GRPC,
 ) idm.IdmServiceServer {
 	return &Handler{
-		accountLogic:      accountLogic,
-		downloadTaskLogic: downloadTaskLogic,
+		accountLogic:              accountLogic,
+		downloadTaskLogic:         downloadTaskLogic,
+		getDownloadTaskFileConfig: grpcConfig.GetDownloadTaskFile,
 	}
 }
 
 type Handler struct {
 	idm.UnimplementedIdmServiceServer
-	accountLogic      logic.AccountLogic
-	downloadTaskLogic logic.DownloadTaskLogic
+	accountLogic              logic.AccountLogic
+	downloadTaskLogic         logic.DownloadTaskLogic
+	getDownloadTaskFileConfig configs.GetDownloadTaskFile
 }
 
 func (h *Handler) getAuthTokenFromMetadata(ctx context.Context) string {
@@ -122,8 +129,49 @@ func (h *Handler) CreateDownloadTask(ctx context.Context, in *idm.CreateDownload
 }
 
 // GetDownloadTaskFile implements idm.IdmServiceServer.
-func (h *Handler) GetDownloadTaskFile(*idm.GetDownloadTaskFileRequest, idm.IdmService_GetDownloadTaskFileServer) error {
-	panic("unimplemented")
+func (h *Handler) GetDownloadTaskFile(in *idm.GetDownloadTaskFileRequest, server idm.IdmService_GetDownloadTaskFileServer) error {
+	output, err := h.downloadTaskLogic.GetDownloadTaskFile(context.Background(), logic.GetDownloadTaskFileInput{
+		Token:          h.getAuthTokenFromMetadata(server.Context()),
+		DownloadTaskID: in.DownloadTaskId,
+	})
+	if err != nil {
+		return clientResponseError(err)
+	}
+
+	outputReader := output.Reader
+	defer outputReader.Close()
+
+	responseBufferSizeInBytes, err := h.getDownloadTaskFileConfig.GetResponseBufferSizeInBytes()
+	if err != nil {
+		return clientResponseError(err)
+	}
+	
+	responseBuffer := make([]byte, responseBufferSizeInBytes)
+	for {
+		readByteCount, err := outputReader.Read(responseBuffer)
+
+		if readByteCount > 0 {
+			err = server.Send(&idm.GetDownloadTaskFileResponse{
+				Data: responseBuffer[:readByteCount],
+			})
+			if err != nil {
+				return clientResponseError(err)
+			}
+
+			continue
+		}
+
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			return clientResponseError(err)
+		}
+
+	}
+
+	return nil
 }
 
 // GetDownloadTaskList implements idm.IdmServiceServer.

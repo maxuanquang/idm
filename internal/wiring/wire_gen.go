@@ -106,7 +106,7 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 		cleanup()
 		return app.Server{}, nil, err
 	}
-	idmServiceServer := grpc.NewHandler(accountLogic, downloadTaskLogic)
+	idmServiceServer := grpc.NewHandler(accountLogic, downloadTaskLogic, configsGRPC)
 	server := grpc.NewServer(configsGRPC, idmServiceServer)
 	configsHTTP := config.HTTP
 	httpServer := http.NewServer(configsHTTP, configsGRPC, auth, logger)
