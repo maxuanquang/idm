@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	"github.com/maxuanquang/idm/internal/utils"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -27,9 +28,11 @@ type DownloadTaskDataAccessor interface {
 	CreateDownloadTask(ctx context.Context, downloadTask DownloadTask) (DownloadTask, error)
 	GetDownloadTask(ctx context.Context, downloadTaskID uint64) (DownloadTask, error)
 	GetDownloadTaskForUpdate(ctx context.Context, downloadTaskID uint64) (DownloadTask, error)
+	GetPendingDownloadTaskIDList(ctx context.Context) ([]uint64, error)
 	GetDownloadTaskListOfAccount(ctx context.Context, accountID, offset, limit uint64) ([]DownloadTask, error)
 	GetDownloadTaskCountOfAccount(ctx context.Context, accountID uint64) (uint64, error)
 	UpdateDownloadTask(ctx context.Context, downloadTaskID uint64, downloadStatus uint16, metadata string) error
+	UpdateFailedDownloadTaskStatusToPending(ctx context.Context) error
 	DeleteDownloadTask(ctx context.Context, downloadTaskID uint64) error
 	WithDatabaseTransaction(database Database) DownloadTaskDataAccessor
 }
@@ -78,6 +81,19 @@ func (d *downloadTaskDataAccessor) GetDownloadTask(ctx context.Context, download
 	}
 
 	return downloadTask, nil
+}
+
+func (d *downloadTaskDataAccessor) GetPendingDownloadTaskIDList(ctx context.Context) ([]uint64, error) {
+	logger := utils.LoggerWithContext(ctx, d.logger)
+
+	var downloadTaskIDs []uint64
+	result := d.database.Model(&DownloadTask{}).Where("download_status = ?", uint16(idm.DownloadStatus_Pending)).Pluck("download_task_id", &downloadTaskIDs)
+	if result.Error != nil {
+		logger.With(zap.Error(result.Error)).Error("error getting pending download task id list")
+		return nil, result.Error
+	}
+
+	return downloadTaskIDs, nil
 }
 
 // GetDownloadTaskForUpdate implements DownloadTaskDataAccessor.
@@ -141,13 +157,28 @@ func (d *downloadTaskDataAccessor) UpdateDownloadTask(ctx context.Context, downl
 	if metadata != "" {
 		downloadTask.Metadata = metadata
 	}
-	
+
 	result := d.database.Save(&downloadTask)
 	if result.Error != nil {
 		logger.With(zap.Error(result.Error)).Error("failed to update download task")
 		return result.Error
 	}
 
+	return nil
+}
+
+func (d *downloadTaskDataAccessor) UpdateFailedDownloadTaskStatusToPending(ctx context.Context) error {
+	logger := utils.LoggerWithContext(ctx, d.logger)
+
+	result := d.database.Model(&DownloadTask{}).Where("download_status = ?", uint16(idm.DownloadStatus_Failed)).Update("download_status", uint16(idm.DownloadStatus_Pending))
+	if result.Error != nil {
+		logger.With(zap.Error(result.Error)).Error("failed to update failed download task status to pending")
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		logger.Info("no failed task found")
+	}
 	return nil
 }
 

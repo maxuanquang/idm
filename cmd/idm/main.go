@@ -27,7 +27,7 @@ func server() *cobra.Command {
 				return err
 			}
 
-			app, cleanup, err := wiring.InitializeAppServer(configs.ConfigFilePath(configFilePath))
+			app, cleanup, err := wiring.InitializeStandaloneServer(configs.ConfigFilePath(configFilePath))
 			if err != nil {
 				return err
 			}

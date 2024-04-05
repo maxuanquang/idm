@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/gammazero/workerpool"
+	"github.com/maxuanquang/idm/internal/configs"
 	"github.com/maxuanquang/idm/internal/dataaccess/database"
 	"github.com/maxuanquang/idm/internal/dataaccess/file"
 	"github.com/maxuanquang/idm/internal/dataaccess/mq/producer"
@@ -80,9 +82,11 @@ type DownloadTaskLogic interface {
 	CreateDownloadTask(ctx context.Context, in CreateDownloadTaskInput) (CreateDownloadTaskOutput, error)
 	GetDownloadTaskList(ctx context.Context, in GetDownloadTaskListInput) (GetDownloadTaskListOutput, error)
 	UpdateDownloadTask(ctx context.Context, in UpdateDownloadTaskInput) (UpdateDownloadTaskOutput, error)
+	UpdateFailedDownloadTaskStatusToPending(ctx context.Context) error
 	DeleteDownloadTask(ctx context.Context, in DeleteDownloadTaskInput) error
 
 	ExecuteDownloadTask(ctx context.Context, in ExecuteDownloadTaskInput) error
+	ExecuteAllPendingDownloadTask(ctx context.Context) error
 
 	GetDownloadTaskFile(ctx context.Context, in GetDownloadTaskFileInput) (GetDownloadTaskFileOutput, error)
 }
@@ -95,6 +99,7 @@ func NewDownloadTaskLogic(
 	fileClient file.Client,
 	database database.Database,
 	logger *zap.Logger,
+	cronConfig configs.Cron,
 ) (DownloadTaskLogic, error) {
 	return &downloadTaskLogic{
 		tokenLogic:                  tokenLogic,
@@ -104,6 +109,7 @@ func NewDownloadTaskLogic(
 		fileClient:                  fileClient,
 		database:                    database,
 		logger:                      logger,
+		cronConfig:                  cronConfig,
 	}, nil
 }
 
@@ -115,6 +121,7 @@ type downloadTaskLogic struct {
 	fileClient                  file.Client
 	database                    database.Database
 	logger                      *zap.Logger
+	cronConfig                  configs.Cron
 }
 
 // CreateDownloadTask implements DownloadTaskLogic.
@@ -292,6 +299,11 @@ func (d *downloadTaskLogic) UpdateDownloadTask(ctx context.Context, in UpdateDow
 	}, nil
 }
 
+// UpdateFailedDownloadTaskStatusToPending implements DownloadTaskLogic.
+func (d *downloadTaskLogic) UpdateFailedDownloadTaskStatusToPending(ctx context.Context) error {
+	return d.downloadTaskDataAccessor.UpdateFailedDownloadTaskStatusToPending(ctx)
+}
+
 // DeleteDownloadTask implements DownloadTaskLogic.
 func (d *downloadTaskLogic) DeleteDownloadTask(ctx context.Context, in DeleteDownloadTaskInput) error {
 	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Any("delete_download_task_input", in))
@@ -375,6 +387,41 @@ func (d *downloadTaskLogic) ExecuteDownloadTask(ctx context.Context, in ExecuteD
 
 	logger.Info("download task executed successfully")
 
+	return nil
+}
+
+// ExecuteAllPendingDownloadTask implements DownloadTaskLogic.
+func (d *downloadTaskLogic) ExecuteAllPendingDownloadTask(ctx context.Context) error {
+	logger := utils.LoggerWithContext(ctx, d.logger)
+
+	pendingDownloadTaskIDList, err := d.downloadTaskDataAccessor.GetPendingDownloadTaskIDList(ctx)
+	if err != nil {
+		return err
+	}
+	if len(pendingDownloadTaskIDList) == 0 {
+		logger.Info("no pending download task found")
+		return nil
+	}
+
+	logger.
+		With(zap.Int("len(pending_download_task_id_list)", len(pendingDownloadTaskIDList))).
+		Info("pending download task found")
+
+	workerPool := workerpool.New(d.cronConfig.ExecuteAllPendingDownloadTask.ConcurrencyLimit)
+	for _, id := range pendingDownloadTaskIDList {
+		workerPool.Submit(func() {
+			if executeDownloadTaskErr := d.ExecuteDownloadTask(ctx, ExecuteDownloadTaskInput{
+				DownloadTaskID: id,
+			}); executeDownloadTaskErr != nil {
+				logger.
+					With(zap.Uint64("download_task_id", id)).
+					With(zap.Error(executeDownloadTaskErr)).
+					Error("failed to execute download_task")
+			}
+		})
+	}
+
+	workerPool.StopWait()
 	return nil
 }
 

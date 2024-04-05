@@ -29,6 +29,12 @@ http:
 mq:
   addresses: ["0.0.0.0:9092"]
   client_id: "1"
+cron:
+  execute_all_pending_download_task:
+    schedule: "@every 1m"
+    concurrency_limit: 8
+  update_failed_download_task_status_to_pending:
+    schedule: "@every 10m"
 download:
   mode: "s3"
   download_directory: "./downloads/"

@@ -20,28 +20,29 @@ import (
 	"github.com/maxuanquang/idm/internal/handler/consumer"
 	"github.com/maxuanquang/idm/internal/handler/grpc"
 	"github.com/maxuanquang/idm/internal/handler/http"
+	"github.com/maxuanquang/idm/internal/handler/jobs"
 	"github.com/maxuanquang/idm/internal/logic"
 	"github.com/maxuanquang/idm/internal/utils"
 )
 
 // Injectors from wire.go:
 
-func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, func(), error) {
+func InitializeStandaloneServer(configFilePath configs.ConfigFilePath) (app.StandaloneServer, func(), error) {
 	config, err := configs.NewConfig(configFilePath)
 	if err != nil {
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	configsGRPC := config.GRPC
 	configsDatabase := config.Database
 	databaseDatabase, cleanup, err := database.InitializeDB(configsDatabase)
 	if err != nil {
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	log := config.Log
 	logger, cleanup2, err := utils.InitializeLogger(log)
 	if err != nil {
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	accountDataAccessor := database.NewAccountDataAccessor(databaseDatabase, logger)
 	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(databaseDatabase, logger)
@@ -50,7 +51,7 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	auth := config.Auth
 	configsCache := config.Cache
@@ -58,25 +59,25 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	tokenPublicKey, err := cache.NewTokenPublicKey(client)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	tokenLogic, err := logic.NewTokenLogic(accountDataAccessor, tokenPublicKeyDataAccessor, logger, auth, tokenPublicKey)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	takenAccountName, err := cache.NewTakenAccountName(client)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	accountLogic := logic.NewAccountLogic(databaseDatabase, accountDataAccessor, accountPasswordDataAccessor, hashLogic, tokenLogic, takenAccountName, logger)
 	downloadTaskDataAccessor := database.NewDownloadTaskDataAccessor(databaseDatabase, logger)
@@ -85,26 +86,27 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	downloadTaskCreatedProducer, err := producer.NewDownloadTaskCreatedProducer(producerClient, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	download := config.Download
 	fileClient, err := file.NewClient(download, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
-	downloadTaskLogic, err := logic.NewDownloadTaskLogic(tokenLogic, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, fileClient, databaseDatabase, logger)
+	cron := config.Cron
+	downloadTaskLogic, err := logic.NewDownloadTaskLogic(tokenLogic, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, fileClient, databaseDatabase, logger, cron)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	idmServiceServer := grpc.NewHandler(accountLogic, downloadTaskLogic, configsGRPC)
 	server := grpc.NewServer(configsGRPC, idmServiceServer)
@@ -115,22 +117,30 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	consumerConsumer, err := consumer2.NewConsumer(mq, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
 	rootConsumer := consumer.NewRootConsumer(downloadTaskCreatedHandler, consumerConsumer, logger)
-	appServer, err := app.NewServer(server, httpServer, rootConsumer, logger)
+	executeAllPendingDownloadTaskJob := jobs.NewExecuteAllPendingDownloadTaskJob(downloadTaskLogic, cron)
+	updateFailedDownloadTaskStatusToPendingJob := jobs.NewUpdateFailedDownloadTaskStatusToPendingJob(downloadTaskLogic, cron)
+	jobsCron, err := jobs.NewCron(executeAllPendingDownloadTaskJob, updateFailedDownloadTaskStatusToPendingJob, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
-		return app.Server{}, nil, err
+		return app.StandaloneServer{}, nil, err
 	}
-	return appServer, func() {
+	standaloneServer, err := app.NewStandaloneServer(server, httpServer, rootConsumer, jobsCron, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return app.StandaloneServer{}, nil, err
+	}
+	return standaloneServer, func() {
 		cleanup2()
 		cleanup()
 	}, nil
