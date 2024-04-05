@@ -10,17 +10,17 @@ import (
 )
 
 var (
-	version    string = "0"
-	commitHash string = "0"
+	version    string
+	commitHash string
 )
 
 const (
 	flagConfigFilePath = "config-file-path"
 )
 
-func server() *cobra.Command {
+func standaloneServer() *cobra.Command {
 	command := &cobra.Command{
-		Use: "server",
+		Use: "standalone-server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			configFilePath, err := cmd.Flags().GetString(flagConfigFilePath)
 			if err != nil {
@@ -48,7 +48,7 @@ func main() {
 		Version: fmt.Sprintf("%s-%s", version, commitHash),
 	}
 	rootCommand.AddCommand(
-		server(),
+		standaloneServer(),
 	)
 
 	if err := rootCommand.Execute(); err != nil {

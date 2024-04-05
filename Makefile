@@ -1,3 +1,7 @@
+VERSION := 1.0.0
+COMMIT_HASH := $(shell git rev-parse HEAD)
+PROJECT_NAME := idm
+
 .PHONY: database
 database:
 	docker run --name mysql -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=idm mysql:8.3.0 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
@@ -47,13 +51,28 @@ generate:
 tidy:
 	go mod tidy
 
-.PHONY: server
-server:
-	go run ./cmd/idm/main.go server
+
 
 .PHONY: build-web
 build-web:
-	cd web && npm run build && cd ..
+	cd web/src/api && npm install && cd ../../../
+	cd web && npm install && npm run build && cd ..
+
+.PHONY: build-backend
+build-backend:
+	go build \
+		-ldflags "-X main.version=$(VERSION) -X main.commitHash=$(COMMIT_HASH)" \
+		-o build/$(PROJECT_NAME) \
+		cmd/$(PROJECT_NAME)/*.go
+
+.PHONY: build
+build:
+	make build-web
+	make build-backend
+
+.PHONY: standalone-server
+standalone-server:
+	go run ./cmd/idm/main.go standalone-server
 
 .PHONY: docker-compose-dev-up
 docker-compose-dev-up:
@@ -62,3 +81,15 @@ docker-compose-dev-up:
 .PHONY: docker-compose-dev-down
 docker-compose-dev-down:
 	docker compose -f ./internal/deployments/docker-compose.dev.yml down
+
+.PHONY: docker-compose-prod-up
+docker-compose-prod-up:
+	docker compose -f ./internal/deployments/docker-compose.prod.yml up -d
+
+.PHONY: docker-compose-prod-down
+docker-compose-prod-down:
+	docker compose -f ./internal/deployments/docker-compose.prod.yml down
+
+.PHONY: run
+run:
+	./build/idm standalone-server

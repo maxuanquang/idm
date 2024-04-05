@@ -28,3 +28,5 @@ go.work
 
 # Misc
 openapitools.json
+
+build/
