@@ -51,6 +51,10 @@ tidy:
 server:
 	go run ./cmd/idm/main.go server
 
+.PHONY: build-web
+build-web:
+	cd web && npm run build && cd ..
+
 .PHONY: docker-compose-dev-up
 docker-compose-dev-up:
 	docker compose -f ./internal/deployments/docker-compose.dev.yml up -d

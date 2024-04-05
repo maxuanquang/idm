@@ -42,13 +42,14 @@ func WithAuthMetadataToAuthCookie(authCookieName string, authTokenMetadataName s
 			}
 
 			http.SetCookie(w, &http.Cookie{
-				Name:     authCookieName,
-				Value:    authTokenMetadataValues[0],
-				// HttpOnly: true,
+				Name:  authCookieName,
+				Value: authTokenMetadataValues[0],
+				HttpOnly: true,
 				SameSite: http.SameSiteNoneMode,
 				Path:     "/",
 				Domain:   "",
 				Expires:  time.Now().Add(expiresInDuration),
+				Secure:   true,
 			})
 			return nil
 		},

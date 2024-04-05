@@ -29,12 +29,14 @@ func NewServer(
 	httpConfig configs.HTTP,
 	grpcConfig configs.GRPC,
 	authConfig configs.Auth,
+	spaHandler SPAHandler,
 	logger *zap.Logger,
 ) Server {
 	return &server{
 		httpConfig: httpConfig,
 		grpcConfig: grpcConfig,
 		authConfig: authConfig,
+		spaHandler: spaHandler,
 		logger:     logger,
 	}
 }
@@ -43,11 +45,12 @@ type server struct {
 	httpConfig configs.HTTP
 	grpcConfig configs.GRPC
 	authConfig configs.Auth
+	spaHandler SPAHandler
 	logger     *zap.Logger
 }
 
 func (s *server) Start(ctx context.Context) error {
-	mux := runtime.NewServeMux(
+	gwMux := runtime.NewServeMux(
 		servemuxoption.WithAuthCookieToAuthMetadata(AuthCookieName, grpcHandler.AuthTokenMetadataName),
 		servemuxoption.WithAuthMetadataToAuthCookie(AuthCookieName, grpcHandler.AuthTokenMetadataName, s.authConfig.Token.GetTokenDuration()),
 	)
@@ -55,13 +58,17 @@ func (s *server) Start(ctx context.Context) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	err := gw.RegisterIdmServiceHandlerFromEndpoint(
 		ctx,
-		mux,
+		gwMux,
 		s.grpcConfig.Address,
 		opts,
 	)
 	if err != nil {
 		return err
 	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/", s.spaHandler)
+	mux.Handle("/api/", gwMux)
 
 	fmt.Printf("http server is running on %s\n", s.httpConfig.Address)
 	if s.httpConfig.Mode == configs.HTTPModeDevelopment {
