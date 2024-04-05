@@ -21,7 +21,7 @@ proto:
 	--go_out=./internal/generated \
 	--go-grpc_out=./internal/generated \
 	--validate_out="lang=go:./internal/generated" \
-	--openapiv2_out=./api \
+	--openapiv2_out=./api/v1 \
 	--grpc-gateway_out ./internal/generated --grpc-gateway_opt generate_unbound_methods=true \
 	--experimental_allow_proto3_optional \
 	api/idm.proto
@@ -30,10 +30,18 @@ proto:
 wire:
 	wire ./internal/wiring/wire.go
 
+.PHONY: openapi
+openapi:
+	openapi-generator-cli generate \
+		-i api/v1/idm.swagger.json \
+		-g javascript \
+		-o web/src/api
+
 .PHONY: generate
 generate:
 	make proto
 	make wire
+	make openapi
 
 .PHONY: tidy
 tidy:

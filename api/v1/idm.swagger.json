@@ -16,7 +16,7 @@
     "application/json"
   ],
   "paths": {
-    "/v1/accounts": {
+    "/api/v1/accounts": {
       "post": {
         "operationId": "IdmService_CreateAccount",
         "responses": {
@@ -48,7 +48,7 @@
         ]
       }
     },
-    "/v1/sessions": {
+    "/api/v1/sessions": {
       "delete": {
         "operationId": "IdmService_DeleteSession",
         "responses": {
@@ -100,7 +100,7 @@
         ]
       }
     },
-    "/v1/tasks": {
+    "/api/v1/tasks": {
       "get": {
         "operationId": "IdmService_GetDownloadTaskList",
         "responses": {
@@ -168,7 +168,7 @@
         ]
       }
     },
-    "/v1/tasks/{downloadTaskId}": {
+    "/api/v1/tasks/{downloadTaskId}": {
       "delete": {
         "operationId": "IdmService_DeleteDownloadTask",
         "responses": {
@@ -236,7 +236,7 @@
         ]
       }
     },
-    "/v1/tasks/{downloadTaskId}/files": {
+    "/api/v1/tasks/{downloadTaskId}/files": {
       "get": {
         "operationId": "IdmService_GetDownloadTaskFile",
         "responses": {

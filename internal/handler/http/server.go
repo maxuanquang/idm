@@ -13,6 +13,7 @@ import (
 	"github.com/maxuanquang/idm/internal/configs"
 	gw "github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	grpcHandler "github.com/maxuanquang/idm/internal/handler/grpc"
+	"github.com/maxuanquang/idm/internal/handler/http/middlewares"
 	"github.com/maxuanquang/idm/internal/handler/http/servemuxoption"
 )
 
@@ -62,7 +63,9 @@ func (s *server) Start(ctx context.Context) error {
 		return err
 	}
 
-	// Start HTTP server (and proxy calls to gRPC server endpoint)
 	fmt.Printf("http server is running on %s\n", s.httpConfig.Address)
+	if s.httpConfig.Mode == configs.HTTPModeDevelopment {
+		return http.ListenAndServe(s.httpConfig.Address, middlewares.WithCORS(mux))
+	}
 	return http.ListenAndServe(s.httpConfig.Address, mux)
 }

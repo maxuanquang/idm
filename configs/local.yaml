@@ -22,9 +22,10 @@ cache:
 grpc:
   address: "0.0.0.0:8080"
   get_download_task_file:
-    response_buffer_size: 1kb
+    response_buffer_size: 2kb
 http:
   address: "0.0.0.0:8081"
+  mode: "development" # [development, production]
 mq:
   addresses: ["0.0.0.0:9092"]
   client_id: "1"

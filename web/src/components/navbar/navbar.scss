@@ -1,0 +1,116 @@
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #fff;
+  font-size: large;
+  font-weight: bold;
+}
+
+.logo img {
+  width: 40px;
+  height: auto;
+  margin-right: 10px;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+  .userName {
+    font-weight: bold; /* Make the user name bold */
+    margin-right: 10px; /* Add distance between user name and logout button */
+  }
+}
+
+.logoutButton,
+.newDownloadTaskButton {
+  padding: 5px 10px;
+  background-color: #fff;
+  color: #007bff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.logoutButton:hover,
+.newDownloadTaskButton:hover {
+  background-color: #0056b3;
+  color: #fff;
+}
+
+.popup {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  background-color: #fff;
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
+.popup form {
+  display: flex;
+  flex-direction: column;
+}
+
+.popup label {
+  margin-bottom: 10px;
+  color: #0056b3;
+}
+
+.popup input {
+  padding: 5px;
+  margin-bottom: 10px;
+}
+
+.popup button {
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.popup button:hover {
+  background-color: #0056b3;
+}
+
+.error {
+  color: #ff0000;
+}
+
+.success {
+  color: #008000;
+}
+
+.signinLink {
+  margin-right: 20px;
+  font-weight: bold;
+}
+
+.registerLink {
+  margin-right: 20px;
+  font-weight: bold;
+}

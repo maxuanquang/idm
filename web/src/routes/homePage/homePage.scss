@@ -1,0 +1,37 @@
+.homePage {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  height: 100vh;
+  overflow-y: auto;
+
+  ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+
+  li {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+
+  button {
+    margin-top: 10px;
+    margin-right: 10px;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: fit-content; /* Set the width to fit the content */
+  }
+
+  button:hover {
+    background-color: #0056b3;
+  }
+}
