@@ -8,46 +8,46 @@ option go_package = "grpc/idm";
 service IdmService {
     rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {
         option (google.api.http) = {
-            post : "/v1/accounts",
+            post : "/api/v1/accounts",
             body : "*"
         };
     }
     rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse) {
         option (google.api.http) = {
-            post : "/v1/sessions",
+            post : "/api/v1/sessions",
             body : "*"
         };
     }
     rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse) {
         option (google.api.http) = {
-            delete : "/v1/sessions",
+            delete : "/api/v1/sessions",
         };
     }
     rpc CreateDownloadTask(CreateDownloadTaskRequest) returns (CreateDownloadTaskResponse) {
         option (google.api.http) = {
-            post : "/v1/tasks",
+            post : "/api/v1/tasks",
             body : "*"
         };
     }
     rpc GetDownloadTaskList(GetDownloadTaskListRequest) returns (GetDownloadTaskListResponse) {
         option (google.api.http) = {
-            get : "/v1/tasks",
+            get : "/api/v1/tasks",
         };
     }
     rpc UpdateDownloadTask(UpdateDownloadTaskRequest) returns (UpdateDownloadTaskResponse) {
         option (google.api.http) = {
-            put : "/v1/tasks/{download_task_id}",
+            put : "/api/v1/tasks/{download_task_id}",
             body : "*"
         };
     }
     rpc DeleteDownloadTask(DeleteDownloadTaskRequest) returns (DeleteDownloadTaskResponse) {
         option (google.api.http) = {
-            delete : "/v1/tasks/{download_task_id}",
+            delete : "/api/v1/tasks/{download_task_id}",
         };
     }
     rpc GetDownloadTaskFile(GetDownloadTaskFileRequest) returns (stream GetDownloadTaskFileResponse) {
         option (google.api.http) = {
-            get : "/v1/tasks/{download_task_id}/files",
+            get : "/api/v1/tasks/{download_task_id}/files",
         };
     }
 }

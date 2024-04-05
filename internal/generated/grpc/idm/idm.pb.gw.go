@@ -323,7 +323,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/CreateAccount", runtime.WithHTTPPathPattern("/v1/accounts"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/CreateAccount", runtime.WithHTTPPathPattern("/api/v1/accounts"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -348,7 +348,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/CreateSession", runtime.WithHTTPPathPattern("/v1/sessions"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/CreateSession", runtime.WithHTTPPathPattern("/api/v1/sessions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -373,7 +373,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/DeleteSession", runtime.WithHTTPPathPattern("/v1/sessions"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/DeleteSession", runtime.WithHTTPPathPattern("/api/v1/sessions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -398,7 +398,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/CreateDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/CreateDownloadTask", runtime.WithHTTPPathPattern("/api/v1/tasks"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -423,7 +423,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/GetDownloadTaskList", runtime.WithHTTPPathPattern("/v1/tasks"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/GetDownloadTaskList", runtime.WithHTTPPathPattern("/api/v1/tasks"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -448,7 +448,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/UpdateDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks/{download_task_id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/UpdateDownloadTask", runtime.WithHTTPPathPattern("/api/v1/tasks/{download_task_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -473,7 +473,7 @@ func RegisterIdmServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/DeleteDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks/{download_task_id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/idm.IdmService/DeleteDownloadTask", runtime.WithHTTPPathPattern("/api/v1/tasks/{download_task_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -544,7 +544,7 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/CreateAccount", runtime.WithHTTPPathPattern("/v1/accounts"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/CreateAccount", runtime.WithHTTPPathPattern("/api/v1/accounts"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -566,7 +566,7 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/CreateSession", runtime.WithHTTPPathPattern("/v1/sessions"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/CreateSession", runtime.WithHTTPPathPattern("/api/v1/sessions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -588,7 +588,7 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/DeleteSession", runtime.WithHTTPPathPattern("/v1/sessions"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/DeleteSession", runtime.WithHTTPPathPattern("/api/v1/sessions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -610,7 +610,7 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/CreateDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/CreateDownloadTask", runtime.WithHTTPPathPattern("/api/v1/tasks"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -632,7 +632,7 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/GetDownloadTaskList", runtime.WithHTTPPathPattern("/v1/tasks"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/GetDownloadTaskList", runtime.WithHTTPPathPattern("/api/v1/tasks"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -654,7 +654,7 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/UpdateDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks/{download_task_id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/UpdateDownloadTask", runtime.WithHTTPPathPattern("/api/v1/tasks/{download_task_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -676,7 +676,7 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/DeleteDownloadTask", runtime.WithHTTPPathPattern("/v1/tasks/{download_task_id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/DeleteDownloadTask", runtime.WithHTTPPathPattern("/api/v1/tasks/{download_task_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -698,7 +698,7 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/GetDownloadTaskFile", runtime.WithHTTPPathPattern("/v1/tasks/{download_task_id}/files"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/idm.IdmService/GetDownloadTaskFile", runtime.WithHTTPPathPattern("/api/v1/tasks/{download_task_id}/files"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -718,21 +718,21 @@ func RegisterIdmServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 }
 
 var (
-	pattern_IdmService_CreateAccount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "accounts"}, ""))
+	pattern_IdmService_CreateAccount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "accounts"}, ""))
 
-	pattern_IdmService_CreateSession_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "sessions"}, ""))
+	pattern_IdmService_CreateSession_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "sessions"}, ""))
 
-	pattern_IdmService_DeleteSession_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "sessions"}, ""))
+	pattern_IdmService_DeleteSession_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "sessions"}, ""))
 
-	pattern_IdmService_CreateDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "tasks"}, ""))
+	pattern_IdmService_CreateDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "tasks"}, ""))
 
-	pattern_IdmService_GetDownloadTaskList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "tasks"}, ""))
+	pattern_IdmService_GetDownloadTaskList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "tasks"}, ""))
 
-	pattern_IdmService_UpdateDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "tasks", "download_task_id"}, ""))
+	pattern_IdmService_UpdateDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "tasks", "download_task_id"}, ""))
 
-	pattern_IdmService_DeleteDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "tasks", "download_task_id"}, ""))
+	pattern_IdmService_DeleteDownloadTask_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "tasks", "download_task_id"}, ""))
 
-	pattern_IdmService_GetDownloadTaskFile_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "tasks", "download_task_id", "files"}, ""))
+	pattern_IdmService_GetDownloadTaskFile_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "tasks", "download_task_id", "files"}, ""))
 )
 
 var (

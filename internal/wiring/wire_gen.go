@@ -109,7 +109,8 @@ func InitializeAppServer(configFilePath configs.ConfigFilePath) (app.Server, fun
 	idmServiceServer := grpc.NewHandler(accountLogic, downloadTaskLogic, configsGRPC)
 	server := grpc.NewServer(configsGRPC, idmServiceServer)
 	configsHTTP := config.HTTP
-	httpServer := http.NewServer(configsHTTP, configsGRPC, auth, logger)
+	spaHandler := http.NewSPAHandler(logger)
+	httpServer := http.NewServer(configsHTTP, configsGRPC, auth, spaHandler, logger)
 	downloadTaskCreatedHandler, err := consumer.NewDownloadTaskCreatedHandler(downloadTaskLogic, logger)
 	if err != nil {
 		cleanup2()

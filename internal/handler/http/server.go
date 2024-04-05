@@ -13,6 +13,7 @@ import (
 	"github.com/maxuanquang/idm/internal/configs"
 	gw "github.com/maxuanquang/idm/internal/generated/grpc/idm"
 	grpcHandler "github.com/maxuanquang/idm/internal/handler/grpc"
+	"github.com/maxuanquang/idm/internal/handler/http/middlewares"
 	"github.com/maxuanquang/idm/internal/handler/http/servemuxoption"
 )
 
@@ -28,12 +29,14 @@ func NewServer(
 	httpConfig configs.HTTP,
 	grpcConfig configs.GRPC,
 	authConfig configs.Auth,
+	spaHandler SPAHandler,
 	logger *zap.Logger,
 ) Server {
 	return &server{
 		httpConfig: httpConfig,
 		grpcConfig: grpcConfig,
 		authConfig: authConfig,
+		spaHandler: spaHandler,
 		logger:     logger,
 	}
 }
@@ -42,11 +45,12 @@ type server struct {
 	httpConfig configs.HTTP
 	grpcConfig configs.GRPC
 	authConfig configs.Auth
+	spaHandler SPAHandler
 	logger     *zap.Logger
 }
 
 func (s *server) Start(ctx context.Context) error {
-	mux := runtime.NewServeMux(
+	gwMux := runtime.NewServeMux(
 		servemuxoption.WithAuthCookieToAuthMetadata(AuthCookieName, grpcHandler.AuthTokenMetadataName),
 		servemuxoption.WithAuthMetadataToAuthCookie(AuthCookieName, grpcHandler.AuthTokenMetadataName, s.authConfig.Token.GetTokenDuration()),
 	)
@@ -54,7 +58,7 @@ func (s *server) Start(ctx context.Context) error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	err := gw.RegisterIdmServiceHandlerFromEndpoint(
 		ctx,
-		mux,
+		gwMux,
 		s.grpcConfig.Address,
 		opts,
 	)
@@ -62,7 +66,13 @@ func (s *server) Start(ctx context.Context) error {
 		return err
 	}
 
-	// Start HTTP server (and proxy calls to gRPC server endpoint)
+	mux := http.NewServeMux()
+	mux.Handle("/", s.spaHandler)
+	mux.Handle("/api/", gwMux)
+
 	fmt.Printf("http server is running on %s\n", s.httpConfig.Address)
+	if s.httpConfig.Mode == configs.HTTPModeDevelopment {
+		return http.ListenAndServe(s.httpConfig.Address, middlewares.WithCORS(mux))
+	}
 	return http.ListenAndServe(s.httpConfig.Address, mux)
 }

@@ -25,3 +25,6 @@ downloads/
 
 # Go workspace file
 go.work
+
+# Misc
+openapitools.json
