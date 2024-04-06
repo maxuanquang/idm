@@ -1,6 +1,6 @@
 # Internet Download Manager
 
-Internet Download Manager is a Go-based application designed to manage and facilitate the downloading of files from the internet efficiently.
+Internet Download Manager is a Go-based application designed to manage and facilitate the downloading of files from the internet efficiently. This project is designed with a scale-up capability in mind, ensuring that it can handle increased workload and demand as needed.
 
 ## Features
 
